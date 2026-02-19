@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="index, follow">
+
+    <!-- ブラウザのアドレスバー等の色設定 -->
+    <meta name="theme-color" content="#f8f8f8">
+
+    <title>otamochi portfolio</title>
+
+    <!-- アニメーションライブラリ Anime.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+    <!-- Google Fonts 読み込み (Noto Sans JP, Quicksand) -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Quicksand:wght@500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- 外部CSSの読み込み -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="antialiased">
+
+    <!-- カスタムカーソル要素 -->
+    <div id="custom-cursor"></div>
+
+    <!-- ローディング画面 -->
+    <div id="loader">
+        <div class="loader-text-wrapper">
+            <div class="loader-text">LOADING</div>
+        </div>
+    </div>
+
+    <!-- フローティングナビゲーション  -->
+    <nav class="floating-nav">
+        <!-- ブランド名 -->
+        <div class="nav-brand">
+            <span id="nav-role-text">otamochi</span>
+        </div>
+        <!-- お問い合わせボタン -->
+        <a href="#" class="nav-contact-btn link-hover-target">Contact</a>
+    </nav>
+
+    <!-- メインアプリケーションラッパー -->
+    <div id="app">
+
+        <!-- ヘッダー -->
+        <header class="header-section">
+            <div class="parallax-bg" data-speed="0.2">
+                PORT<br>FOLIO
+            </div>
+
+            <div class="header-content">
+                <!-- Welcome! 全幅大見出し -->
+                <h2 class="brand-welcome">Welcome!</h2>
+
+                <!-- 名前・肩書・線（左寄せグループ） -->
+                <div class="header-profile-area">
+                    <h1 id="user-name" class="user-name"></h1>
+                    <p id="user-bio" class="user-subtitle"></p>
+                    <div class="separator-line line-anim"></div>
+                </div>
+
+                <!-- コピーブロック（独立させて中央寄せ） -->
+                <div class="header-copy">
+                    <span class="copy-line">Designing how you work,</span>
+                    <span class="copy-line">Aligning how teams work,</span>
+                    <span class="copy-line">Building how work flows</span>
+                    <span class="copy-line-accent">— <span class="accent-highlight">with Notion.</span></span>
+                </div>
+            </div>
+
+            <!-- スクロールインジケーター -->
+            <div class="scroll-indicator">
+                <span class="scroll-text">Scroll</span>
+                <div class="scroll-line"></div>
+            </div>
+        </header>
+
+        <!-- ギャラリーセクション (Selected Works) -->
+        <section class="gallery-section section-py container-padding">
+            <div class="section-header">
+                <h2 class="section-title">Works</h2>
+            </div>
+            <div id="gallery-grid"></div>
+        </section>
+
+        <!-- テキストセクション (Free Text) -->
+        <section class="text-section section-py container-padding">
+            <div class="section-header">
+                <h2 class="section-title" id="free-text-title"></h2>
+            </div>
+            <div class="text-content-wrapper">
+                <p id="free-text-body-en" class="text-body"></p>
+                <div class="text-separator"></div>
+                <p id="free-text-body-jp" class="text-body"></p>
+            </div>
+        </section>
+
+        <!-- コンタクトセクション (Contact) -->
+        <section class="contact-section section-py container-padding">
+            <div class="contact-inner">
+                <div class="contact-grid">
+                    <div>
+                        <h2 class="contact-heading">
+                            Whenever<br>you're ready.
+                        </h2>
+                    </div>
+                    <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+                        <ul id="links-list" class="links-list">
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p id="copyright"></p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 画像モーダル（拡大表示） -->
+    <div id="image-modal">
+        <div class="close-btn" onclick="closeModal()">
+            <svg viewBox="0 0 60 60" fill="none">
+                <path d="M20 20L40 40M40 20L20 40" stroke="#111" stroke-width="3" stroke-linecap="round" />
+            </svg>
+        </div>
+        <div class="modal-content-wrapper" onclick="closeModal()">
+            <img id="modal-image" src="" alt="" onclick="event.stopPropagation()">
+        </div>
+    </div>
+
+    <!-- 外部JSの読み込み -->
+    <script src="js/main.js"></script>
+</body>
+
+</html>
