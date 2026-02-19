@@ -76,6 +76,20 @@
             // プレビュー用にPicsum Photosを使用
             const getRandomImage = (index) => `https://picsum.photos/seed/${index + 100}/800/800`;
 
+            // 安全策：画像読み込みに関わらず、最大2.5秒後にアニメーションを強制開始する
+            const safetyTimeout = setTimeout(() => {
+                console.log("Forcing animation start due to timeout");
+                startOpeningAnimation();
+            }, 2500);
+
+            let isStarted = false;
+            const triggerStart = () => {
+                if (isStarted) return;
+                isStarted = true;
+                clearTimeout(safetyTimeout);
+                setTimeout(startOpeningAnimation, 500);
+            };
+
             for (let i = 1; i <= maxImages; i++) {
                 const promise = new Promise((resolve) => {
                     const imgPath = getRandomImage(i);
@@ -85,7 +99,7 @@
                         resolve({ success: true, index: i, src: imgPath });
                     };
                     imgObj.onerror = () => {
-                        resolve({ success: true, index: i, src: imgPath });
+                        resolve({ success: false, index: i, src: "" });
                     };
                 });
                 imagePromises.push(promise);
@@ -98,8 +112,9 @@
                         createGalleryItem(result.index, result.src, galleryContainer);
                     }
                 });
-                // 少し遅延させて安定させる
-                setTimeout(startOpeningAnimation, 500);
+                triggerStart();
+            }).catch(() => {
+                triggerStart();
             });
         }
 
