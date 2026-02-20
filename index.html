@@ -122,15 +122,23 @@
         </section>
     </div>
 
-    <!-- 画像モーダル（拡大表示） -->
-    <div id="image-modal">
-        <div class="close-btn" onclick="closeModal()">
-            <svg viewBox="0 0 60 60" fill="none">
-                <path d="M20 20L40 40M40 20L20 40" stroke="#111" stroke-width="3" stroke-linecap="round" />
-            </svg>
-        </div>
-        <div class="modal-content-wrapper" onclick="closeModal()">
-            <img id="modal-image" src="" alt="" onclick="event.stopPropagation()">
+    <!-- カード型モーダル -->
+    <div id="content-modal" onclick="closeModal(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="close-btn link-hover-target" onclick="closeModal(event)">
+                <svg viewBox="0 0 60 60" fill="none">
+                    <path d="M20 20L40 40M40 20L20 40" stroke="#111" stroke-width="3" stroke-linecap="round" />
+                </svg>
+            </div>
+            <img id="modal-card-image" class="modal-card-image" src="" alt="">
+            <div class="modal-card-content">
+                <h3 id="modal-card-title" class="modal-card-title"></h3>
+                <p id="modal-card-desc" class="modal-card-desc"></p>
+                <a id="modal-card-link" href="#" target="_blank" class="modal-card-link link-hover-target"
+                    style="display: none;">
+                    プロジェクトを見る ↗
+                </a>
+            </div>
         </div>
     </div>
 

@@ -133,17 +133,24 @@ function setupGallery() {
 }
 
 function createGalleryItem(index, src, container) {
+    // 【変更】ここにプロジェクトのデータを定義する（将来Notion連携で置き換える部分）
+    const workData = {
+        title: `プロジェクト実績 ${index}`,
+        description: `ここにプロジェクトの詳細文や背景が入ります。\n長文になっても、このカード内でスクロールできるようになっています。`,
+        url: index % 2 !== 0 ? "https://notion.com" : null
+    };
+
     const div = document.createElement('div');
     div.className = `gallery-item link-hover-target`;
     div.innerHTML = `
-        <img src="${src}" alt="Work ${index}" loading="lazy">
+        <img src="${src}" alt="${workData.title}" loading="lazy">
         <div class="gallery-overlay"></div>
-        <div class="gallery-caption">
-            <span class="view-btn">VIEW</span>
-        </div>
+        <div class="gallery-caption"><span class="view-btn">VIEW</span></div>
     `;
     container.appendChild(div);
-    div.addEventListener('click', () => openModal(src));
+
+    // 【変更】画像URLだけでなく、詳細データ(workData)もモーダルに渡す
+    div.addEventListener('click', () => openModal(src, workData));
 }
 
 // オープニングアニメーション
@@ -297,22 +304,38 @@ function initCursor() {
     });
 }
 
-// モーダル制御
-const modal = document.getElementById('image-modal');
-const modalImg = document.getElementById('modal-image');
+// モーダル制御の変数定義を変更
+const modal = document.getElementById('content-modal');
+const modalCard = document.querySelector('.modal-card');
+const modalImg = document.getElementById('modal-card-image');
+const modalTitle = document.getElementById('modal-card-title');
+const modalDesc = document.getElementById('modal-card-desc');
+const modalLink = document.getElementById('modal-card-link');
 
-function openModal(src) {
-    if (!modal || !modalImg) return;
+function openModal(src, data) {
+    // データをカード内に流し込む
     modalImg.src = src;
+    modalTitle.innerText = data.title;
+    modalDesc.innerText = data.description;
+
+    // リンクの有無でボタンの表示を切り替える
+    if (data.url) {
+        modalLink.href = data.url;
+        modalLink.style.display = 'inline-flex';
+    } else {
+        modalLink.style.display = 'none';
+    }
+
+    // アニメーション表示
     modal.style.display = 'flex';
     anime.timeline({ easing: 'easeOutExpo' })
         .add({ targets: modal, opacity: [0, 1], duration: 400 })
-        .add({ targets: modalImg, scale: [0.95, 1], opacity: [0, 1], duration: 600 }, '-=300');
+        .add({ targets: modalCard, scale: [0.95, 1], translateY: [20, 0], opacity: [0, 1], duration: 500 }, '-=300');
     document.body.style.overflow = 'hidden';
 }
 
-window.closeModal = function () {
-    if (!modal || !modalImg) return;
+window.closeModal = function (e) {
+    if (e) e.stopPropagation();
     anime.timeline({
         easing: 'easeInQuad',
         complete: () => {
@@ -321,6 +344,6 @@ window.closeModal = function () {
             document.body.style.overflow = '';
         }
     })
-        .add({ targets: modalImg, scale: 0.95, opacity: 0, duration: 300 })
-        .add({ targets: modal, opacity: 0, duration: 300 }, '-=200');
+        .add({ targets: modalCard, scale: 0.95, translateY: 10, opacity: 0, duration: 250 })
+        .add({ targets: modal, opacity: 0, duration: 300 }, '-=150');
 };
