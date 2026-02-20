@@ -133,11 +133,20 @@ function setupGallery() {
 }
 
 function createGalleryItem(index, src, container) {
-    // 【変更】ここにプロジェクトのデータを定義する（将来Notion連携で置き換える部分）
+    // 【変更】Notionのプロパティに合わせたデータ構造
+    const categories = ["Web Design", "App UI", "Branding", "Notion System"];
+    const toolsList = ["Figma", "Illustrator", "Photoshop", "React", "HTML/CSS"];
+
+    // ランダムにツールを1〜3個選ぶ
+    const randomTools = toolsList.sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 3) + 1);
+
     const workData = {
-        title: `プロジェクト実績 ${index}`,
-        description: `ここにプロジェクトの詳細文や背景が入ります。\n長文になっても、このカード内でスクロールできるようになっています。`,
-        url: index % 2 !== 0 ? "https://notion.com" : null
+        title: `プロジェクト実績 ${index}`, // 案件名
+        client: `株式会社サンプル${index}`, // クライアント名
+        category: categories[index % categories.length], // カテゴリ
+        overview: `ここにプロジェクトの概要が入ります。1〜2文の簡潔な説明です。\nNotionデータベースから取得したテキストが表示されます。`, // 概要
+        tools: randomTools, // 使用ツール (複数選択)
+        url: index % 2 !== 0 ? "https://notion.com" : null // 外部リンク
     };
 
     const div = document.createElement('div');
@@ -309,14 +318,30 @@ const modal = document.getElementById('content-modal');
 const modalCard = document.querySelector('.modal-card');
 const modalImg = document.getElementById('modal-card-image');
 const modalTitle = document.getElementById('modal-card-title');
+const modalClient = document.getElementById('modal-card-client');
+const modalCategory = document.getElementById('modal-card-category');
+const modalTools = document.getElementById('modal-card-tools');
 const modalDesc = document.getElementById('modal-card-desc');
 const modalLink = document.getElementById('modal-card-link');
 
 function openModal(src, data) {
     // データをカード内に流し込む
-    modalImg.src = src;
-    modalTitle.innerText = data.title;
-    modalDesc.innerText = data.description;
+    modalImg.src = src; // サムネイル
+    modalTitle.innerText = data.title || ""; // 案件名
+    modalClient.innerText = data.client || ""; // クライアント名
+    modalCategory.innerText = data.category || ""; // カテゴリ
+    modalDesc.innerText = data.overview || ""; // 概要
+
+    // 使用ツールの表示
+    modalTools.innerHTML = '';
+    if (data.tools && data.tools.length > 0) {
+        data.tools.forEach(tool => {
+            const span = document.createElement('span');
+            span.className = 'modal-card-tool-badge';
+            span.innerText = tool;
+            modalTools.appendChild(span);
+        });
+    }
 
     // リンクの有無でボタンの表示を切り替える
     if (data.url) {
