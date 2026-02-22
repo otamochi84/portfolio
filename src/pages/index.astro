@@ -1,3 +1,46 @@
+---
+import { Client } from "@notionhq/client";
+
+const notion = new Client({ auth: import.meta.env.NOTION_API_KEY });
+const databaseId = import.meta.env.NOTION_DATABASE_ID;
+
+let notionData = [];
+
+try {
+    const response = await notion.databases.query({
+        database_id: databaseId,
+        // 並び替えルール設定（たとえば日付順など、後で追加可能）
+    });
+
+    notionData = response.results.map((page: any) => {
+        const props = page.properties;
+        
+        const title = props['案件名']?.title?.[0]?.plain_text || "名称未設定";
+        const client = props['クライアント名']?.rich_text?.[0]?.plain_text || "";
+        const category = props['カテゴリ']?.select?.name || "";
+        const overview = props['概要']?.rich_text?.[0]?.plain_text || "";
+        const tools = props['使用ツール']?.multi_select?.map((t: any) => t.name) || [];
+        
+        const thumbnailFile = props['サムネイル']?.files?.[0];
+        let thumbnail = "https://picsum.photos/seed/notion/800/800"; // デフォルト画像
+        if (thumbnailFile) {
+            thumbnail = thumbnailFile.file?.url || thumbnailFile.external?.url || thumbnail;
+        }
+
+        return {
+            title,
+            client,
+            category,
+            overview,
+            tools,
+            thumbnail,
+            url: null 
+        };
+    });
+} catch (err) {
+    console.error("Notion API Error:", err);
+}
+---
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -153,6 +196,11 @@
             </div>
         </div>
     </div>
+
+    <!-- 外部JSの処理にAstroから取得したNotionデータを渡す -->
+    <script is:inline define:vars={{ notionData }}>
+        window.notionDataFromAstro = notionData;
+    </script>
 
     <!-- 外部JSの読み込み -->
     <script is:inline src="/js/main.js"></script>

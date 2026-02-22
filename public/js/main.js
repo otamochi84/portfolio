@@ -85,11 +85,8 @@ function setupGallery() {
     const galleryContainer = document.getElementById('gallery-grid');
     if (!galleryContainer) return;
 
-    const maxImages = portfolioConfig.maxImages;
-    const imagePromises = [];
-
-    // プレビュー用にPicsum Photosを使用
-    const getRandomImage = (index) => `https://picsum.photos/seed/${index + 100}/800/800`;
+    // Astroから渡されたNotionのデータを取得
+    const items = window.notionDataFromAstro || [];
 
     // 安全策：画像読み込みに関わらず、最大2.5秒後にアニメーションを強制開始する
     const safetyTimeout = setTimeout(() => {
@@ -104,62 +101,39 @@ function setupGallery() {
         setTimeout(startOpeningAnimation, 500);
     };
 
-    for (let i = 1; i <= maxImages; i++) {
-        const promise = new Promise((resolve) => {
-            const imgPath = getRandomImage(i);
-            const imgObj = new Image();
-            imgObj.src = imgPath;
-            imgObj.onload = () => {
-                resolve({ success: true, index: i, src: imgPath });
-            };
-            imgObj.onerror = () => {
-                resolve({ success: false, index: i, src: "" });
-            };
-        });
-        imagePromises.push(promise);
+    if (items.length === 0) {
+        triggerStart();
+        return;
     }
 
-    // 画像読み込み完了後にアニメーション開始
-    Promise.all(imagePromises).then((results) => {
-        results.forEach(result => {
-            if (result.success) {
-                createGalleryItem(result.index, result.src, galleryContainer);
+    let loadedCount = 0;
+
+    items.forEach((item, index) => {
+        createGalleryItem(index, item, galleryContainer);
+
+        const imgObj = new Image();
+        imgObj.onload = imgObj.onerror = () => {
+            loadedCount++;
+            if (loadedCount === items.length) {
+                triggerStart();
             }
-        });
-        triggerStart();
-    }).catch(() => {
-        triggerStart();
+        };
+        imgObj.src = item.thumbnail;
     });
 }
 
-function createGalleryItem(index, src, container) {
-    // 【変更】Notionのプロパティに合わせたデータ構造
-    const categories = ["Web Design", "App UI", "Branding", "Notion System"];
-    const toolsList = ["Figma", "Illustrator", "Photoshop", "React", "HTML/CSS"];
-
-    // ランダムにツールを1〜3個選ぶ
-    const randomTools = toolsList.sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 3) + 1);
-
-    const workData = {
-        title: `プロジェクト実績 ${index}`, // 案件名
-        client: `株式会社サンプル${index}`, // クライアント名
-        category: categories[index % categories.length], // カテゴリ
-        overview: `ここにプロジェクトの概要が入ります。1〜2文の簡潔な説明です。\nNotionデータベースから取得したテキストが表示されます。`, // 概要
-        tools: randomTools, // 使用ツール (複数選択)
-        url: index % 2 !== 0 ? "https://notion.com" : null // 外部リンク
-    };
-
+function createGalleryItem(index, workData, container) {
     const div = document.createElement('div');
     div.className = `gallery-item link-hover-target`;
     div.innerHTML = `
-        <img src="${src}" alt="${workData.title}" loading="lazy">
+        <img src="${workData.thumbnail}" alt="${workData.title}" loading="lazy">
         <div class="gallery-overlay"></div>
         <div class="gallery-caption"><span class="view-btn">VIEW</span></div>
     `;
     container.appendChild(div);
 
-    // 【変更】画像URLだけでなく、詳細データ(workData)もモーダルに渡す
-    div.addEventListener('click', () => openModal(src, workData));
+    // 画像URLだけでなく、詳細データ(workData)もモーダルに渡す
+    div.addEventListener('click', () => openModal(workData.thumbnail, workData));
 }
 
 // オープニングアニメーション
