@@ -1,5 +1,7 @@
 ---
 import { Client } from "@notionhq/client";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 const notion = new Client({ auth: import.meta.env.NOTION_API_KEY });
 const databaseId = import.meta.env.NOTION_DATABASE_ID;
@@ -12,7 +14,10 @@ try {
         // 並び替えルール設定（たとえば日付順など、後で追加可能）
     });
 
-    notionData = response.results.map((page: any) => {
+    const imagesDir = path.join(process.cwd(), "public", "notion-images");
+    await fs.mkdir(imagesDir, { recursive: true });
+
+    notionData = await Promise.all(response.results.map(async (page: any) => {
         const props = page.properties;
         
         const title = props['案件名']?.title?.[0]?.plain_text || "名称未設定";
@@ -24,7 +29,35 @@ try {
         const thumbnailFile = props['サムネイル']?.files?.[0];
         let thumbnail = "https://picsum.photos/seed/notion/800/800"; // デフォルト画像
         if (thumbnailFile) {
-            thumbnail = thumbnailFile.file?.url || thumbnailFile.external?.url || thumbnail;
+            const fileUrl = thumbnailFile.file?.url || thumbnailFile.external?.url;
+            if (fileUrl) {
+                try {
+                    // URL から拡張子を取り出す（クエリパラメータを除去）
+                    const urlObj = new URL(fileUrl);
+                    let ext = path.extname(urlObj.pathname);
+                    if (!ext) ext = ".png"; // デフォルト
+                    
+                    const fileName = `${page.id}${ext}`;
+                    const filePath = path.join(imagesDir, fileName);
+
+                    // 画像の実体データをダウンロードする
+                    const imgRes = await fetch(fileUrl);
+                    if (imgRes.ok) {
+                        const arrayBuffer = await imgRes.arrayBuffer();
+                        const buffer = Buffer.from(arrayBuffer);
+                        await fs.writeFile(filePath, buffer);
+                        
+                        // S3の一時URLではなく、ダウンロードしたローカル画像のパスに書き換える
+                        thumbnail = `/notion-images/${fileName}`;
+                    } else {
+                        console.error("Failed to fetch image:", imgRes.statusText);
+                        thumbnail = fileUrl; // フォールバック
+                    }
+                } catch (e) {
+                    console.error("Image download error:", e);
+                    thumbnail = fileUrl; // フォールバック
+                }
+            }
         }
 
         return {
@@ -36,7 +69,7 @@ try {
             thumbnail,
             url: null 
         };
-    });
+    }));
 } catch (err) {
     console.error("Notion API Error:", err);
 }
