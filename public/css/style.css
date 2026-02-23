@@ -254,7 +254,7 @@
             .parallax-bg {
                 font-size: 18vw;
                 /* スマホ時の最終透明度はJSアニメーションで制御しますが、CSSの初期値は0でOK */
-                top: 8%;
+                top: 15%;
                 right: 5%;
             }
         }
@@ -275,7 +275,7 @@
             letter-spacing: -0.02em;
             color: #111;
             line-height: 1.1;
-            margin-bottom: 2rem;
+            margin-bottom: 5rem;
             /* アニメーション用 */
             opacity: 0;
             transform: translateY(20px);
