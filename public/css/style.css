@@ -254,7 +254,7 @@
             .parallax-bg {
                 font-size: 18vw;
                 /* スマホ時の最終透明度はJSアニメーションで制御しますが、CSSの初期値は0でOK */
-                top: 15%;
+                top: 8%;
                 right: 5%;
             }
         }
