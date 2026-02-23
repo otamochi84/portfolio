@@ -14,7 +14,7 @@
 
             /* ▼ レイアウト設定 */
             /* フォント設定 */
-            --font-main: 'Futura', 'Noto Sans JP', sans-serif;
+            --font-main: 'Futura', 'Jost', 'Noto Sans JP', sans-serif;
             /* レイアウト用パディング変数 */
             --spacing-container: 24px;
             --spacing-container-md: 96px;
@@ -702,6 +702,11 @@
             margin: 3rem 0;
         }
 
+        #free-text-body-jp {
+            /* Quicksandには日本語が含まれないため、英字のみQuicksandになり、日本語はNoto Sans JPが適用されます */
+            font-family: 'Quicksand', 'Noto Sans JP', sans-serif;
+        }
+
         /* --- Contact / Footer --- */
         .contact-section {
             background-color: var(--bg-footer);
@@ -738,8 +743,9 @@
         }
 
         .contact-heading {
+            font-family: 'Quicksand', sans-serif;
             font-size: 1.75rem;
-            font-weight: 400;
+            font-weight: 700;
             letter-spacing: -0.025em;
             margin-bottom: 3rem;
             line-height: 1.2;
