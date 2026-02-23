@@ -248,7 +248,6 @@
             font-size: 15vw;
             transform: translateY(0);
             will-change: transform;
-            text-align: right;
         }
 
         @media (max-width: 768px) {
