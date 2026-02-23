@@ -233,7 +233,7 @@
         /* 背景の巨大文字 (otamochi) */
         .parallax-bg {
             position: absolute;
-            right: -5%;
+            right: 2%;
             top: 10%;
             font-weight: bold;
             color: #e5e7eb;
@@ -248,14 +248,15 @@
             font-size: 15vw;
             transform: translateY(0);
             will-change: transform;
+            text-align: right;
         }
 
         @media (max-width: 768px) {
             .parallax-bg {
-                font-size: 20vw;
+                font-size: 18vw;
                 /* スマホ時の最終透明度はJSアニメーションで制御しますが、CSSの初期値は0でOK */
                 top: 15%;
-                right: -10%;
+                right: 5%;
             }
         }
 
