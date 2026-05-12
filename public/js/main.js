@@ -32,6 +32,8 @@ const portfolioConfig = {
 document.addEventListener('DOMContentLoaded', () => {
     setupContent();
     setupGallery();
+    // ローダーを廃止したため、DOM準備直後にヒーロー登場アニメを開始する
+    startOpeningAnimation();
 });
 
 // テキストやリンクの流し込み
@@ -80,45 +82,14 @@ function setupContent() {
     initCursor();
 }
 
-// ギャラリー画像の生成と読み込み処理
+// ギャラリー画像の生成（ローダー連動を廃止）
 function setupGallery() {
     const galleryContainer = document.getElementById('gallery-grid');
     if (!galleryContainer) return;
 
-    // Astroから渡されたNotionのデータを取得
     const items = window.notionDataFromAstro || [];
-
-    // 安全策：画像読み込みに関わらず、最大2.5秒後にアニメーションを強制開始する
-    const safetyTimeout = setTimeout(() => {
-        startOpeningAnimation();
-    }, 2500);
-
-    let isStarted = false;
-    const triggerStart = () => {
-        if (isStarted) return;
-        isStarted = true;
-        clearTimeout(safetyTimeout);
-        setTimeout(startOpeningAnimation, 500);
-    };
-
-    if (items.length === 0) {
-        triggerStart();
-        return;
-    }
-
-    let loadedCount = 0;
-
     items.forEach((item, index) => {
         createGalleryItem(index, item, galleryContainer);
-
-        const imgObj = new Image();
-        imgObj.onload = imgObj.onerror = () => {
-            loadedCount++;
-            if (loadedCount === items.length) {
-                triggerStart();
-            }
-        };
-        imgObj.src = item.thumbnail;
     });
 }
 
@@ -131,55 +102,38 @@ function createGalleryItem(index, workData, container) {
         <div class="gallery-caption"><span class="view-btn">VIEW</span></div>
     `;
     container.appendChild(div);
-
-    // 画像URLだけでなく、詳細データ(workData)もモーダルに渡す
     div.addEventListener('click', () => openModal(workData.thumbnail, workData));
 }
 
-// オープニングアニメーション
+// オープニングアニメーション（ヒーロー強化版・ローダーなし）
 function startOpeningAnimation() {
-    const loader = document.getElementById('loader');
-    if (!loader || loader.style.display === 'none') return;
-
     const tl = anime.timeline({ easing: 'easeOutExpo' });
 
     const isMobile = window.innerWidth <= 768;
     const bgOpacity = isMobile ? 0.08 : 0.15;
 
     tl
-        .add({
-            targets: '.loader-text',
-            translateY: [100, 0], opacity: [0, 1], duration: 800
-        })
-        .add({
-            targets: '#loader',
-            translateY: -window.innerHeight, duration: 1000, easing: 'easeInOutExpo', delay: 400
-        })
-        .add({
-            targets: '#loader',
-            duration: 1,
-            complete: function () {
-                document.getElementById('loader').style.display = 'none';
-            }
-        })
+        // 背景の巨大文字「ota / mochi」をドリフトインさせる
         .add({
             targets: '.parallax-bg',
-            opacity: [0, bgOpacity],
-            duration: 1500,
-        }, '-=800')
+            opacity: [0, bgOpacity * 1.4],
+            translateX: [80, 0],
+            scale: [1.1, 1],
+            duration: 1800,
+        })
         .add({
             targets: '.brand-welcome',
-            translateY: [30, 0],
+            translateY: [40, 0],
             opacity: [0, 1],
-            duration: 1000,
+            duration: 1100,
             easing: 'easeOutQuart'
-        }, '-=1200')
+        }, '-=1400')
         .add({
             targets: '.reveal-text span',
             translateY: ['100%', '0%'],
             opacity: [0, 1],
             duration: 1000,
-            delay: anime.stagger(40),
+            delay: anime.stagger(70),
         }, '-=800')
         .add({
             targets: '.user-subtitle',
@@ -194,10 +148,10 @@ function startOpeningAnimation() {
         }, '-=700')
         .add({
             targets: ['.copy-line', '.copy-line-accent'],
-            translateY: [20, 0],
+            translateY: [30, 0],
             opacity: [0, 1],
-            duration: 800,
-            delay: anime.stagger(100),
+            duration: 900,
+            delay: anime.stagger(140),
             easing: 'easeOutQuad'
         }, '-=600')
         .add({
@@ -299,14 +253,12 @@ const modalDesc = document.getElementById('modal-card-desc');
 const modalLink = document.getElementById('modal-card-link');
 
 function openModal(src, data) {
-    // データをカード内に流し込む
-    modalImg.src = src; // サムネイル
-    modalTitle.innerText = data.title || ""; // 案件名
-    modalClient.innerText = data.client || ""; // クライアント名
-    modalCategory.innerText = data.category || ""; // カテゴリ
-    modalDesc.innerText = data.overview || ""; // 概要
+    modalImg.src = src;
+    modalTitle.innerText = data.title || "";
+    modalClient.innerText = data.client || "";
+    modalCategory.innerText = data.category || "";
+    modalDesc.innerText = data.overview || "";
 
-    // 使用ツールの表示
     modalTools.innerHTML = '';
     if (data.tools && data.tools.length > 0) {
         data.tools.forEach(tool => {
@@ -317,7 +269,6 @@ function openModal(src, data) {
         });
     }
 
-    // リンクの有無でボタンの表示を切り替える
     if (data.url) {
         modalLink.href = data.url;
         modalLink.style.display = 'inline-flex';
@@ -325,7 +276,6 @@ function openModal(src, data) {
         modalLink.style.display = 'none';
     }
 
-    // アニメーション表示
     modal.style.display = 'flex';
     anime.timeline({ easing: 'easeOutExpo' })
         .add({ targets: modal, opacity: [0, 1], duration: 400 })
