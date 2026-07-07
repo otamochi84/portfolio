@@ -3,6 +3,22 @@ import { Client } from "@notionhq/client";
 import fs from "node:fs/promises";
 import path from "node:path";
 
+// Phase 1: テキスト・リンク設定をHTMLに直接展開するためのデータ
+const siteConfig = {
+    name: "Ryota Ohashi",
+    role: "otamochi",
+    bio: "Notion Architect / Template Creator \nbased in Nara, Japan.",
+    freeTextTitle: "About",
+    freeTextBodyEn: "I specialize in designing custom operational systems for small and medium-sized businesses,\nincluding database design, automations, and integrations.\n\nMy goal is to help teams work smarter with tools that fit their unique workflows.",
+    freeTextBodyJp: "中小企業や個人の方を中心に、\n「Notionを入れてみたけどうまく使えていない」\n「これから導入を検討している」\nという方のお手伝いをしています。\n\nNotionは、仕事で使ういろんな道具をひとつにまとめられるツールです。\n\n「情報がバラバラで探しにくい」\n「Excelやスプレッドシートの管理が限界」\n——Notionを使えばそんな悩みを解決できます。\n\nタスク管理、日報、顧客管理、社内wikiなど、必要な情報をNotionでひとつにまとめ、\n無理なく使い続けられる仕組みを設計・構築します。\n\nまずはお気軽にご相談ください。",
+    links: [
+        { label: "Template ", url: "https://www.notion.com/ja/@otamochi" },
+        { label: "X (Twitter)", url: "https://x.com/Otamochi84" },
+        { label: "LINE", url: "https://lin.ee/CPoxhA7" },
+        { label: "Email", url: "mailto:hello@otamochi.com" }
+    ]
+};
+
 const notion = new Client({ auth: import.meta.env.NOTION_API_KEY });
 const databaseId = import.meta.env.NOTION_DATABASE_ID;
 
@@ -17,7 +33,7 @@ try {
     const isProd = import.meta.env.PROD;
     const publicImagesDir = path.join(process.cwd(), "public", "notion-images");
     await fs.mkdir(publicImagesDir, { recursive: true });
-    
+
     let distImagesDir = null;
     if (isProd) {
         distImagesDir = path.join(process.cwd(), "dist", "notion-images");
@@ -26,13 +42,13 @@ try {
 
     notionData = await Promise.all(response.results.map(async (page: any) => {
         const props = page.properties;
-        
+
         const title = props['案件名']?.title?.[0]?.plain_text || "名称未設定";
         const client = props['クライアント名']?.rich_text?.[0]?.plain_text || "";
         const category = props['カテゴリ']?.select?.name || "";
         const overview = props['概要']?.rich_text?.[0]?.plain_text || "";
         const tools = props['使用ツール']?.multi_select?.map((t: any) => t.name) || [];
-        
+
         const thumbnailFile = props['サムネイル']?.files?.[0];
         let thumbnail = "https://picsum.photos/seed/notion/800/800"; // デフォルト画像
         if (thumbnailFile) {
@@ -43,7 +59,7 @@ try {
                     const urlObj = new URL(fileUrl);
                     let ext = path.extname(urlObj.pathname);
                     if (!ext) ext = ".png"; // デフォルト
-                    
+
                     const fileName = `${page.id}${ext}`;
                     const filePathPublic = path.join(publicImagesDir, fileName);
 
@@ -52,16 +68,16 @@ try {
                     if (imgRes.ok) {
                         const arrayBuffer = await imgRes.arrayBuffer();
                         const buffer = Buffer.from(arrayBuffer);
-                        
+
                         // public フォルダに保存
                         await fs.writeFile(filePathPublic, buffer);
-                        
+
                         // 本番ビルド時は dist フォルダにも保存（Astroのコピー処理後に保存されるため）
                         if (distImagesDir) {
                             const filePathDist = path.join(distImagesDir, fileName);
                             await fs.writeFile(filePathDist, buffer);
                         }
-                        
+
                         // S3の一時URLではなく、ダウンロードしたローカル画像のパスに書き換える
                         thumbnail = `/notion-images/${fileName}`;
                     } else {
@@ -82,7 +98,7 @@ try {
             overview,
             tools,
             thumbnail,
-            url: null 
+            url: null
         };
     }));
 } catch (err) {
@@ -123,7 +139,7 @@ try {
     <nav class="floating-nav">
         <!-- ブランド名 -->
         <div class="nav-brand">
-            <span id="nav-role-text">otamochi</span>
+            <span id="nav-role-text">{siteConfig.role}</span>
         </div>
         <!-- お問い合わせボタン -->
         <a href="#" class="nav-contact-btn link-hover-target">Contact</a>
@@ -144,8 +160,15 @@ try {
 
                 <!-- 名前・肩書・線（左寄せグループ） -->
                 <div class="header-profile-area">
-                    <h1 id="user-name" class="user-name"></h1>
-                    <p id="user-bio" class="user-subtitle"></p>
+                    <h1 id="user-name" class="user-name">
+                        {siteConfig.name.split(' ').map((word, index, arr) => (
+                            <>
+                                <span class="reveal-text"><span>{word}</span></span>
+                                {index < arr.length - 1 && ' '}
+                            </>
+                        ))}
+                    </h1>
+                    <p id="user-bio" class="user-subtitle">{siteConfig.bio}</p>
                     <div class="separator-line line-anim"></div>
                 </div>
 
@@ -176,12 +199,12 @@ try {
         <!-- テキストセクション (Free Text) -->
         <section class="text-section section-py container-padding">
             <div class="section-header">
-                <h2 class="section-title" id="free-text-title"></h2>
+                <h2 class="section-title" id="free-text-title">{siteConfig.freeTextTitle}</h2>
             </div>
             <div class="text-content-wrapper">
-                <p id="free-text-body-en" class="text-body"></p>
+                <p id="free-text-body-en" class="text-body">{siteConfig.freeTextBodyEn}</p>
                 <div class="text-separator"></div>
-                <p id="free-text-body-jp" class="text-body"></p>
+                <p id="free-text-body-jp" class="text-body">{siteConfig.freeTextBodyJp}</p>
             </div>
         </section>
 
@@ -197,11 +220,19 @@ try {
                     </div>
                     <div style="display: flex; flex-direction: column; justify-content: flex-end;">
                         <ul id="links-list" class="links-list">
+                            {siteConfig.links.map((link) => (
+                                <li class="link-item">
+                                    <a href={link.url} target="_blank" rel="noopener noreferrer" class="link-anchor link-hover-target">
+                                        <span class="link-label">{link.label}</span>
+                                        <span class="link-arrow">OPEN ↗</span>
+                                    </a>
+                                </li>
+                            ))}
                         </ul>
                     </div>
                 </div>
                 <div class="footer-bottom">
-                    <p id="copyright"></p>
+                    <p id="copyright">&copy; {new Date().getFullYear()} {siteConfig.role}</p>
                 </div>
             </div>
         </section>

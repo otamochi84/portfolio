@@ -1,30 +1,5 @@
 /**
  * =================================================================================
- * 【かんたん設定エリア】
- * =================================================================================
- */
-const portfolioConfig = {
-    name: "Ryota Ohashi",
-    role: "otamochi",
-    bio: "Notion Architect / Template Creator \nbased in Nara, Japan.",
-
-    freeTextTitle: "About",
-    freeTextBodyEn: "I specialize in designing custom operational systems for small and medium-sized businesses,\nincluding database design, automations, and integrations.\n\nMy goal is to help teams work smarter with tools that fit their unique workflows.",
-    freeTextBodyJp: "中小企業や個人の方を中心に、\n「Notionを入れてみたけどうまく使えていない」\n「これから導入を検討している」\nという方のお手伝いをしています。\n\nNotionは、仕事で使ういろんな道具をひとつにまとめられるツールです。\n\n「情報がバラバラで探しにくい」\n「Excelやスプレッドシートの管理が限界」\n——Notionを使えばそんな悩みを解決できます。\n\nタスク管理、日報、顧客管理、社内wikiなど、必要な情報をNotionでひとつにまとめ、\n無理なく使い続けられる仕組みを設計・構築します。\n\nまずはお気軽にご相談ください。",
-
-    maxImages: 12, // 枚数を調整
-    imageExtension: ".jpg",
-
-    links: [
-        { label: "Template ", url: "https://www.notion.com/ja/@otamochi" },
-        { label: "X (Twitter)", url: "https://x.com/Otamochi84" },
-        { label: "LINE", url: "https://lin.ee/CPoxhA7" },
-        { label: "Email", url: "mailto:hello@otamochi.com" }
-    ]
-};
-
-/**
- * =================================================================================
  * プログラム本体
  * =================================================================================
  */
@@ -36,49 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     startOpeningAnimation();
 });
 
-// テキストやリンクの流し込み
+// カスタムカーソル初期化
 function setupContent() {
-    const nameEl = document.getElementById('user-name');
-    if (nameEl) {
-        nameEl.innerHTML = portfolioConfig.name.split(' ').map(word =>
-            `<span class="reveal-text"><span>${word}</span></span>`
-        ).join(' ');
-    }
-
-    const roleEl = document.getElementById('nav-role-text');
-    if (roleEl) roleEl.innerText = portfolioConfig.role;
-
-    const bioEl = document.getElementById('user-bio');
-    if (bioEl) bioEl.innerText = portfolioConfig.bio;
-
-    const copyrightEl = document.getElementById('copyright');
-    if (copyrightEl) copyrightEl.innerHTML = `&copy; ${new Date().getFullYear()} ${portfolioConfig.role}`;
-
-    const freeTitleEl = document.getElementById('free-text-title');
-    if (freeTitleEl) freeTitleEl.innerText = portfolioConfig.freeTextTitle;
-
-    const freeEnEl = document.getElementById('free-text-body-en');
-    if (freeEnEl) freeEnEl.innerText = portfolioConfig.freeTextBodyEn;
-
-    const freeJpEl = document.getElementById('free-text-body-jp');
-    if (freeJpEl) freeJpEl.innerText = portfolioConfig.freeTextBodyJp;
-
-    // リンク生成
-    const linksContainer = document.getElementById('links-list');
-    if (linksContainer) {
-        linksContainer.innerHTML = '';
-        portfolioConfig.links.forEach(link => {
-            linksContainer.innerHTML += `
-                <li class="link-item">
-                    <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="link-anchor link-hover-target">
-                        <span class="link-label">${link.label}</span>
-                        <span class="link-arrow">OPEN ↗</span>
-                    </a>
-                </li>
-            `;
-        });
-    }
-
     initCursor();
 }
 
