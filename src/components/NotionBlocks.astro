@@ -1,0 +1,223 @@
+---
+interface Props {
+  blocks: any[];
+}
+
+const { blocks } = Astro.props;
+
+/**
+ * テキストをHTMLエスケープする関数
+ */
+function escapeHtml(text: string): string {
+  const map: { [key: string]: string } = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  };
+  return text.replace(/[&<>"']/g, (char) => map[char]);
+}
+
+/**
+ * リッチテキスト配列をHTMLに変換
+ */
+function renderRichText(richTexts: any[]): string {
+  if (!richTexts || richTexts.length === 0) return "";
+
+  let html = "";
+
+  for (const text of richTexts) {
+    const content = text.plain_text || "";
+    const escaped = escapeHtml(content);
+    let result = escaped;
+
+    // 装飾を適用
+    const annotations = text.annotations || {};
+    if (annotations.code) {
+      result = `<code>${result}</code>`;
+    }
+    if (annotations.italic) {
+      result = `<em>${result}</em>`;
+    }
+    if (annotations.bold) {
+      result = `<strong>${result}</strong>`;
+    }
+
+    // リンクの処理
+    if (text.href) {
+      const escapedHref = escapeHtml(text.href);
+      result = `<a href="${escapedHref}" target="_blank" rel="noopener">${result}</a>`;
+    }
+
+    html += result;
+  }
+
+  return html;
+}
+
+/**
+ * ブロック配列をHTMLに変換
+ */
+function renderBlocks(blockList: any[]): string {
+  let html = "";
+  let i = 0;
+
+  while (i < blockList.length) {
+    const block = blockList[i];
+    const blockType = block.type;
+
+    // bulleted_list_item と numbered_list_item のグループ化
+    if (blockType === "bulleted_list_item") {
+      // 連続する bulleted_list_item をグループ化
+      const listItems = [];
+      while (
+        i < blockList.length &&
+        blockList[i].type === "bulleted_list_item"
+      ) {
+        listItems.push(blockList[i]);
+        i++;
+      }
+      html += renderBulletedList(listItems);
+      continue;
+    }
+
+    if (blockType === "numbered_list_item") {
+      // 連続する numbered_list_item をグループ化
+      const listItems = [];
+      while (
+        i < blockList.length &&
+        blockList[i].type === "numbered_list_item"
+      ) {
+        listItems.push(blockList[i]);
+        i++;
+      }
+      html += renderNumberedList(listItems);
+      continue;
+    }
+
+    // その他のブロック型の処理
+    if (blockType === "paragraph") {
+      const paragraphBlock = block.paragraph || {};
+      const richText = paragraphBlock.rich_text || [];
+      const content = renderRichText(richText);
+      html += `<p>${content}</p>`;
+    } else if (blockType === "heading_1") {
+      const headingBlock = block.heading_1 || {};
+      const richText = headingBlock.rich_text || [];
+      const content = renderRichText(richText);
+      html += `<h2>${content}</h2>`;
+    } else if (blockType === "heading_2") {
+      const headingBlock = block.heading_2 || {};
+      const richText = headingBlock.rich_text || [];
+      const content = renderRichText(richText);
+      html += `<h3>${content}</h3>`;
+    } else if (blockType === "heading_3") {
+      const headingBlock = block.heading_3 || {};
+      const richText = headingBlock.rich_text || [];
+      const content = renderRichText(richText);
+      html += `<h4>${content}</h4>`;
+    } else if (blockType === "image") {
+      const imageBlock = block.image || {};
+      const caption = imageBlock.caption || [];
+      const captionText = renderRichText(caption);
+
+      // localImagePath が設定されていればそれを使用、なければ元のURLを使用
+      let imageSrc = block.localImagePath;
+      if (!imageSrc) {
+        imageSrc = imageBlock.file?.url || imageBlock.external?.url || "";
+      }
+
+      const escapedSrc = escapeHtml(imageSrc);
+
+      if (captionText) {
+        html += `<figure><img src="${escapedSrc}" alt="" loading="lazy"><figcaption>${captionText}</figcaption></figure>`;
+      } else {
+        html += `<figure><img src="${escapedSrc}" alt="" loading="lazy"></figure>`;
+      }
+    } else if (blockType === "quote") {
+      const quoteBlock = block.quote || {};
+      const richText = quoteBlock.rich_text || [];
+      const content = renderRichText(richText);
+      html += `<blockquote>${content}</blockquote>`;
+    } else if (blockType === "divider") {
+      html += `<hr>`;
+    } else if (blockType === "callout") {
+      const calloutBlock = block.callout || {};
+      const icon = calloutBlock.icon?.emoji || "📝";
+      const richText = calloutBlock.rich_text || [];
+      const content = renderRichText(richText);
+      // Notionで設定した色（gray_background等）をクラス名として付与し、CSS側でNotionと同じ配色を適用する
+      const color = calloutBlock.color || "default";
+      html += `<aside class="notion-callout notion-callout-${escapeHtml(color)}"><span class="notion-callout-icon">${escapeHtml(icon)}</span><div>${content}</div></aside>`;
+    } else if (blockType === "code") {
+      const codeBlock = block.code || {};
+      const richText = codeBlock.rich_text || [];
+      // コード内は装飾を無視し、プレーンテキストをそのままエスケープして出力する
+      const plainText = richText.map((t: any) => t.plain_text || "").join("");
+      html += `<pre class="notion-code"><code>${escapeHtml(plainText)}</code></pre>`;
+    } else {
+      console.warn(`Unsupported block type: ${blockType}`);
+    }
+
+    i++;
+  }
+
+  return html;
+}
+
+/**
+ * bulleted_list_item をグループ化してレンダリング
+ */
+function renderBulletedList(items: any[]): string {
+  let html = "<ul>";
+
+  for (const item of items) {
+    const listItemBlock = item.bulleted_list_item || {};
+    const richText = listItemBlock.rich_text || [];
+    const content = renderRichText(richText);
+
+    html += `<li>${content}`;
+
+    // 子ブロックがあれば処理
+    if (item.children && item.children.length > 0) {
+      html += renderBlocks(item.children);
+    }
+
+    html += "</li>";
+  }
+
+  html += "</ul>";
+  return html;
+}
+
+/**
+ * numbered_list_item をグループ化してレンダリング
+ */
+function renderNumberedList(items: any[]): string {
+  let html = "<ol>";
+
+  for (const item of items) {
+    const listItemBlock = item.numbered_list_item || {};
+    const richText = listItemBlock.rich_text || [];
+    const content = renderRichText(richText);
+
+    html += `<li>${content}`;
+
+    // 子ブロックがあれば処理
+    if (item.children && item.children.length > 0) {
+      html += renderBlocks(item.children);
+    }
+
+    html += "</li>";
+  }
+
+  html += "</ol>";
+  return html;
+}
+
+// ブロック配列をHTMLに変換
+const notionHtml = renderBlocks(blocks);
+---
+
+<div class="notion-body" set:html={notionHtml} />

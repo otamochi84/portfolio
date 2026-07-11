@@ -185,6 +185,7 @@ const modalCategory = document.getElementById('modal-card-category');
 const modalTools = document.getElementById('modal-card-tools');
 const modalDesc = document.getElementById('modal-card-desc');
 const modalLink = document.getElementById('modal-card-link');
+const modalDetailLink = document.getElementById('modal-card-detail');
 
 function openModal(src, data) {
     modalImg.src = src;
@@ -203,11 +204,20 @@ function openModal(src, data) {
         });
     }
 
-    if (data.url) {
-        modalLink.href = data.url;
+    // 外部リンク（externalUrl）の出し分け
+    if (data.externalUrl) {
+        modalLink.href = data.externalUrl;
         modalLink.style.display = 'inline-flex';
     } else {
         modalLink.style.display = 'none';
+    }
+
+    // 詳しく見るリンク（slug）の出し分け
+    if (data.slug) {
+        modalDetailLink.href = `/works/${data.slug}/`;
+        modalDetailLink.style.display = 'inline-flex';
+    } else {
+        modalDetailLink.style.display = 'none';
     }
 
     modal.style.display = 'flex';

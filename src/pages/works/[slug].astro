@@ -1,0 +1,138 @@
+---
+import { getWorks, getPageBlocks } from "../../lib/notion";
+import NotionBlocks from "../../components/NotionBlocks.astro";
+
+// 静的パス生成: スラッグが設定されている実績のみ
+export async function getStaticPaths() {
+  const works = await getWorks();
+  return works
+    .filter((work) => work.slug)
+    .map((work) => ({
+      params: { slug: work.slug },
+      props: { work },
+    }));
+}
+
+interface Props {
+  work: any;
+}
+
+const { work } = Astro.props;
+
+// ページの本文ブロック取得
+const blocks = await getPageBlocks(work.id);
+
+// 他の実績への回遊導線（現在のページを除く最新3件）
+const allWorks = await getWorks();
+const otherWorks = allWorks.filter((w) => w.slug && w.id !== work.id).slice(0, 3);
+
+// メタディスクリプション: 概要の先頭120字（改行はスペースに置換）
+const metaDescription = (work.overview || "").substring(0, 120).replace(/\n/g, " ");
+
+// 実施時期フォーマット: YYYY.MM (nullなら空文字)
+let dateFormatted = "";
+if (work.date) {
+  const dateObj = new Date(work.date);
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  dateFormatted = `${year}.${month}`;
+}
+---
+
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#f8f8f8">
+    <meta name="description" content={metaDescription}>
+
+    <!-- OGP タグ -->
+    <meta property="og:title" content={`${work.title} | otamochi portfolio`}>
+    <meta property="og:description" content={metaDescription}>
+    <meta property="og:type" content="article">
+    <meta property="og:image" content={work.thumbnail}>
+
+    <title>{work.title} | otamochi portfolio</title>
+
+    <!-- アニメーションライブラリ Anime.js -->
+    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+    <!-- Google Fonts 読み込み -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Quicksand:wght@500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- CSS読み込み -->
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/works.css">
+</head>
+
+<body class="antialiased">
+
+    <!-- カスタムカーソル要素 -->
+    <div id="custom-cursor"></div>
+
+    <!-- フローティングナビゲーション -->
+    <nav class="floating-nav">
+        <a href="/#works" class="nav-brand link-hover-target">← Works</a>
+        <a href="#" class="nav-contact-btn link-hover-target">Contact</a>
+    </nav>
+
+    <!-- ヘッダー（実施時期 → 案件名 → カテゴリの順のシンプル構成） -->
+    <header class="work-header">
+        {dateFormatted && <p class="work-date">{dateFormatted}</p>}
+
+        <!-- 案件名 -->
+        <h1 class="work-title">{work.title}</h1>
+
+        <!-- カテゴリ -->
+        <p class="work-category">{work.category}</p>
+
+        <!-- 連携ツール（テキストのみ） -->
+        {work.tools && work.tools.length > 0 && (
+            <p class="work-tools">連携ツール：{work.tools.join(' / ')}</p>
+        )}
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="work-article">
+        <!-- リード文（概要プロパティ） -->
+        {work.overview && <p class="work-lead">{work.overview}</p>}
+
+        <!-- Notion本文 -->
+        <NotionBlocks blocks={blocks} />
+
+        <!-- 外部リンク（あれば） -->
+        {work.externalUrl && (
+            <div class="work-external-link">
+                <a href={work.externalUrl} target="_blank" rel="noopener noreferrer" class="link-hover-target">
+                    プロジェクトを見る ↗
+                </a>
+            </div>
+        )}
+
+        <!-- 他の実績への回遊セクション -->
+        {otherWorks.length > 0 && (
+            <section class="other-works">
+                <h2 class="other-works-title">Other Works</h2>
+                <div class="other-works-grid">
+                    {otherWorks.map((other) => (
+                        <a href={`/works/${other.slug}/`} class="other-work-card link-hover-target">
+                            <img src={other.thumbnail} alt={other.title} loading="lazy" />
+                            <p class="other-work-name">{other.title}</p>
+                            <p class="other-work-category">{other.category}</p>
+                        </a>
+                    ))}
+                </div>
+            </section>
+        )}
+    </main>
+
+    <!-- 外部JS読み込み -->
+    <script is:inline src="/js/main.js"></script>
+</body>
+
+</html>

@@ -322,7 +322,6 @@
             margin-bottom: 2rem;
             text-align: left;
             width: 100%;
-            white-space: pre-line;
             /* アニメーション用 */
             opacity: 0;
             transform: translateY(20px);

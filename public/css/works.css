@@ -1,0 +1,355 @@
+/* ==========================================================================
+   works.css - 詳細ページ専用スタイル
+   ========================================================================== */
+
+/* ヘッダー（実施時期 → 案件名 → カテゴリのシンプル構成） */
+.work-header {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 120px 1.5rem 2.5rem 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+@media (min-width: 768px) {
+    .work-header {
+        padding: 140px 3rem 2.5rem 3rem;
+    }
+}
+
+
+/* 本文エリア */
+.work-article {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem 1.5rem;
+    background-color: var(--bg-body);
+    color: var(--text-main);
+}
+
+@media (min-width: 768px) {
+    .work-article {
+        padding: 2.5rem 3rem 4rem 3rem;
+    }
+}
+
+/* 実施時期（案件名の上・小さめだが読みやすいサイズ） */
+.work-date {
+    font-size: 1rem;
+    color: var(--text-sub);
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+}
+
+/* カテゴリ（案件名の下） */
+.work-category {
+    font-size: 0.95rem;
+    color: var(--text-sub);
+    font-weight: 500;
+    margin-bottom: 1.25rem;
+}
+
+/* 案件名（h1） */
+.work-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+    margin-left: -0.02em;
+}
+
+@media (min-width: 768px) {
+    .work-title {
+        font-size: 3rem;
+    }
+}
+
+/* 連携ツール（テキストのみ） */
+.work-tools {
+    font-size: 0.9rem;
+    color: var(--text-sub);
+    font-weight: 500;
+}
+
+/* リード文（概要プロパティ・コールアウト風の薄グレー背景） */
+.work-lead {
+    font-size: 1rem;
+    line-height: 1.9;
+    color: var(--text-main);
+    white-space: pre-line;
+    background-color: #f7f6f3;
+    border-radius: 4px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+/* Notion本文スタイル */
+.notion-body {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--text-main);
+    margin: 2rem 0;
+}
+
+.notion-body p {
+    margin: 1.2rem 0;
+    line-height: 2;
+}
+
+.notion-body h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 2rem 0 1rem 0;
+    line-height: 1.3;
+    color: var(--text-main);
+}
+
+.notion-body h3 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin: 1.8rem 0 0.8rem 0;
+    line-height: 1.3;
+    color: var(--text-main);
+}
+
+.notion-body h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.7rem 0;
+    line-height: 1.3;
+    color: var(--text-main);
+}
+
+.notion-body ul {
+    list-style: disc outside;
+    margin: 1.2rem 0;
+    padding-left: 1.5rem;
+}
+
+.notion-body ul li {
+    margin: 0.5rem 0;
+    line-height: 1.8;
+}
+
+.notion-body ol {
+    list-style: decimal outside;
+    margin: 1.2rem 0;
+    padding-left: 1.5rem;
+}
+
+.notion-body ol li {
+    margin: 0.5rem 0;
+    line-height: 1.8;
+}
+
+.notion-body figure {
+    margin: 2rem 0;
+    padding: 0;
+}
+
+.notion-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    display: block;
+    margin: 0 auto;
+}
+
+.notion-body figcaption {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--text-sub);
+    text-align: center;
+}
+
+.notion-body blockquote {
+    margin: 1.5rem 0;
+    padding-left: 1rem;
+    border-left: 3px solid var(--text-main);
+    color: var(--text-main);
+    line-height: 1.8;
+}
+
+.notion-body hr {
+    margin: 2rem 0;
+    border: none;
+    border-top: 1px solid #e0e0e0;
+}
+
+.notion-body code {
+    background-color: rgba(135, 131, 120, 0.15);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #eb5757;
+}
+
+.notion-body pre {
+    background-color: #f7f6f3;
+    color: var(--text-main);
+    padding: 1.2rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    line-height: 1.5;
+}
+
+.notion-body pre code {
+    background-color: transparent;
+    padding: 0;
+    color: inherit;
+}
+
+.notion-callout {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 1rem;
+    border-radius: 4px;
+    margin: 1.5rem 0;
+}
+
+/* コールアウトの配色（Notionライトテーマと同じ色コード） */
+.notion-callout-default {
+    background-color: transparent;
+    border: 1px solid rgba(55, 53, 47, 0.16);
+}
+
+.notion-callout-gray_background { background-color: #f1f1ef; }
+.notion-callout-brown_background { background-color: #f4eeee; }
+.notion-callout-orange_background { background-color: #fbecdd; }
+.notion-callout-yellow_background { background-color: #fbf3db; }
+.notion-callout-green_background { background-color: #edf3ec; }
+.notion-callout-blue_background { background-color: #e7f3f8; }
+.notion-callout-purple_background { background-color: #f6f3f9; }
+.notion-callout-pink_background { background-color: #f9eef3; }
+.notion-callout-red_background { background-color: #fdebec; }
+
+/* 背景なしで文字色だけ設定した場合 */
+.notion-callout-gray { color: #787774; }
+.notion-callout-brown { color: #9f6b53; }
+.notion-callout-orange { color: #d9730d; }
+.notion-callout-yellow { color: #cb912f; }
+.notion-callout-green { color: #448361; }
+.notion-callout-blue { color: #337ea9; }
+.notion-callout-purple { color: #9065b0; }
+.notion-callout-pink { color: #c14c8a; }
+.notion-callout-red { color: #d44c47; }
+
+.notion-callout-icon {
+    flex-shrink: 0;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.notion-callout > div {
+    flex: 1;
+    line-height: 1.8;
+}
+
+/* 外部リンク */
+.work-external-link {
+    margin: 3rem 0 2rem 0;
+    padding-top: 2rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.work-external-link a {
+    display: inline-block;
+    color: var(--text-main);
+    border-bottom: 1px solid transparent;
+    font-weight: 500;
+    transition: border-color 0.3s ease;
+}
+
+.work-external-link a:hover {
+    border-bottom-color: var(--text-main);
+}
+
+/* 他の実績への回遊セクション */
+.other-works {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.other-works-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-bottom: 1.5rem;
+}
+
+.other-works-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.other-work-card {
+    display: block;
+    color: var(--text-main);
+}
+
+.other-work-card img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 4px;
+    display: block;
+    margin-bottom: 0.75rem;
+    transition: opacity 0.3s ease;
+}
+
+.other-work-card:hover img {
+    opacity: 0.85;
+}
+
+.other-work-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.other-work-category {
+    font-size: 0.8rem;
+    color: var(--text-sub);
+    margin-top: 0.25rem;
+}
+
+/* スマートフォン対応 */
+@media (max-width: 767px) {
+    .work-header {
+        padding: 80px 1rem 2rem 1rem;
+    }
+
+    .work-article {
+        padding: 2rem 1rem 2rem 1rem;
+    }
+
+    .work-title {
+        font-size: 1.6rem;
+    }
+
+    .work-date {
+        font-size: 0.9rem;
+    }
+
+    .work-category {
+        font-size: 0.85rem;
+    }
+
+    .notion-body h2 {
+        font-size: 1.3rem;
+    }
+
+    .notion-body h3 {
+        font-size: 1.15rem;
+    }
+
+    .notion-body h4 {
+        font-size: 1rem;
+    }
+}
