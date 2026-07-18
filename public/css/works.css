@@ -72,18 +72,6 @@
     font-weight: 500;
 }
 
-/* リード文（概要プロパティ・コールアウト風の薄グレー背景） */
-.work-lead {
-    font-size: 1rem;
-    line-height: 1.9;
-    color: var(--text-main);
-    white-space: pre-line;
-    background-color: #f7f6f3;
-    border-radius: 4px;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 2.5rem;
-}
-
 /* Notion本文スタイル */
 .notion-body {
     font-size: 1rem;
@@ -268,55 +256,58 @@
     border-bottom-color: var(--text-main);
 }
 
-/* 他の実績への回遊セクション */
-.other-works {
+/* 前後の実績ナビ */
+.work-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
     margin-top: 4rem;
     padding-top: 2rem;
     border-top: 1px solid #e0e0e0;
 }
 
-.other-works-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    margin-bottom: 1.5rem;
-}
-
-.other-works-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1.5rem;
-}
-
-.other-work-card {
-    display: block;
+.work-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     color: var(--text-main);
 }
 
-.other-work-card img {
-    width: 100%;
+/* 古い実績側は右寄せ（サムネイルも右側に配置） */
+.work-nav-older {
+    flex-direction: row-reverse;
+    text-align: right;
+}
+
+.work-nav-item img {
+    width: 90px;
     aspect-ratio: 4 / 3;
     object-fit: cover;
     border-radius: 4px;
-    display: block;
-    margin-bottom: 0.75rem;
+    flex-shrink: 0;
     transition: opacity 0.3s ease;
 }
 
-.other-work-card:hover img {
+.work-nav-item:hover img {
     opacity: 0.85;
 }
 
-.other-work-name {
+.work-nav-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.work-nav-label {
+    font-size: 0.8rem;
+    color: var(--text-sub);
+    font-weight: 500;
+}
+
+.work-nav-title {
     font-size: 0.95rem;
     font-weight: 600;
     line-height: 1.5;
-}
-
-.other-work-category {
-    font-size: 0.8rem;
-    color: var(--text-sub);
-    margin-top: 0.25rem;
 }
 
 /* スマートフォン対応 */
@@ -351,5 +342,10 @@
 
     .notion-body h4 {
         font-size: 1rem;
+    }
+
+    .work-nav {
+        grid-template-columns: 1fr;
+        gap: 1rem;
     }
 }

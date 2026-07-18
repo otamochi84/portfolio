@@ -22,9 +22,12 @@ const { work } = Astro.props;
 // ページの本文ブロック取得
 const blocks = await getPageBlocks(work.id);
 
-// 他の実績への回遊導線（現在のページを除く最新3件）
+// 前後の実績ナビ（getWorksは実施時期の降順なので、前=新しい実績・後=古い実績）
 const allWorks = await getWorks();
-const otherWorks = allWorks.filter((w) => w.slug && w.id !== work.id).slice(0, 3);
+const sluggedWorks = allWorks.filter((w) => w.slug);
+const currentIndex = sluggedWorks.findIndex((w) => w.id === work.id);
+const newerWork = currentIndex > 0 ? sluggedWorks[currentIndex - 1] : null;
+const olderWork = currentIndex !== -1 && currentIndex < sluggedWorks.length - 1 ? sluggedWorks[currentIndex + 1] : null;
 
 // メタディスクリプション: 概要の先頭120字（改行はスペースに置換）
 const metaDescription = (work.overview || "").substring(0, 120).replace(/\n/g, " ");
@@ -99,9 +102,6 @@ if (work.date) {
 
     <!-- メインコンテンツ -->
     <main class="work-article">
-        <!-- リード文（概要プロパティ） -->
-        {work.overview && <p class="work-lead">{work.overview}</p>}
-
         <!-- Notion本文 -->
         <NotionBlocks blocks={blocks} />
 
@@ -114,20 +114,28 @@ if (work.date) {
             </div>
         )}
 
-        <!-- 他の実績への回遊セクション -->
-        {otherWorks.length > 0 && (
-            <section class="other-works">
-                <h2 class="other-works-title">Other Works</h2>
-                <div class="other-works-grid">
-                    {otherWorks.map((other) => (
-                        <a href={`/works/${other.slug}/`} class="other-work-card link-hover-target">
-                            <img src={other.thumbnail} alt={other.title} loading="lazy" />
-                            <p class="other-work-name">{other.title}</p>
-                            <p class="other-work-category">{other.category}</p>
-                        </a>
-                    ))}
-                </div>
-            </section>
+        <!-- 前後の実績ナビ -->
+        {(newerWork || olderWork) && (
+            <nav class="work-nav">
+                {newerWork ? (
+                    <a href={`/works/${newerWork.slug}/`} class="work-nav-item work-nav-newer link-hover-target">
+                        <img src={newerWork.thumbnail} alt={newerWork.title} loading="lazy" />
+                        <span class="work-nav-text">
+                            <span class="work-nav-label">← Newer</span>
+                            <span class="work-nav-title">{newerWork.title}</span>
+                        </span>
+                    </a>
+                ) : <span class="work-nav-spacer" />}
+                {olderWork && (
+                    <a href={`/works/${olderWork.slug}/`} class="work-nav-item work-nav-older link-hover-target">
+                        <img src={olderWork.thumbnail} alt={olderWork.title} loading="lazy" />
+                        <span class="work-nav-text">
+                            <span class="work-nav-label">Older →</span>
+                            <span class="work-nav-title">{olderWork.title}</span>
+                        </span>
+                    </a>
+                )}
+            </nav>
         )}
     </main>
 
