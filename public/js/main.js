@@ -5,16 +5,10 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    setupContent();
     setupGallery();
     // ローダーを廃止したため、DOM準備直後にヒーロー登場アニメを開始する
     startOpeningAnimation();
 });
-
-// カスタムカーソル初期化
-function setupContent() {
-    initCursor();
-}
 
 // ギャラリー画像の生成（ローダー連動を廃止）
 function setupGallery() {
@@ -131,48 +125,6 @@ function initScrollAnimations() {
 
     const items = document.querySelectorAll('.gallery-item');
     items.forEach(item => observer.observe(item));
-}
-
-// カスタムカーソル制御
-function initCursor() {
-    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    const cursor = document.getElementById('custom-cursor');
-
-    if (isTouch) {
-        if (cursor) cursor.style.display = 'none';
-        return;
-    }
-
-    let mouseX = window.innerWidth / 2;
-    let mouseY = window.innerHeight / 2;
-    let cursorX = mouseX;
-    let cursorY = mouseY;
-
-    document.addEventListener('mousemove', (e) => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-    });
-
-    function animateCursor() {
-        const lerpFactor = 0.15;
-        cursorX += (mouseX - cursorX) * lerpFactor;
-        cursorY += (mouseY - cursorY) * lerpFactor;
-
-        if (cursor) {
-            cursor.style.transform = `translate(${cursorX}px, ${cursorY}px) translate(-50%, -50%)`;
-        }
-        requestAnimationFrame(animateCursor);
-    }
-    animateCursor();
-
-    document.addEventListener('mouseover', (e) => {
-        if (!cursor) return;
-        if (e.target.closest('.link-hover-target') || e.target.closest('a') || e.target.closest('button') || e.target.closest('.close-btn')) {
-            cursor.classList.add('hovered');
-        } else {
-            cursor.classList.remove('hovered');
-        }
-    });
 }
 
 // モーダル制御の変数定義を変更

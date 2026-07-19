@@ -2,10 +2,6 @@
            【設定エリア】 配色やフォント等の基本設定
            ========================================================================== */
         :root {
-            /* ▼ カーソルのサイズ */
-            --cursor-size: 20px;
-            --cursor-hover-size: 60px;
-
             /* ▼ 配色設定 */
             --text-main: #111;
             --text-sub: #555;
@@ -43,74 +39,16 @@
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
             width: 100%;
-            cursor: none;
-            /* カスタムカーソルのためデフォルトカーソルを非表示 */
             overscroll-behavior-y: none;
         }
 
         a {
             text-decoration: none;
             color: inherit;
-            cursor: none;
-            /* リンク上でもカーソル非表示 */
-        }
-
-        button {
-            cursor: none;
         }
 
         ul {
             list-style: none;
-        }
-
-        /* タッチデバイスではデフォルトカーソルに戻す */
-        @media (hover: none) and (pointer: coarse) {
-
-            body,
-            a,
-            button {
-                cursor: auto;
-            }
-
-            #custom-cursor {
-                display: none;
-            }
-        }
-
-        /* --- カスタムカーソル --- */
-        #custom-cursor {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: var(--cursor-size);
-            height: var(--cursor-size);
-            border: 1px solid #111;
-            /* 背景が明るいので黒枠に変更、あるいはmix-blend-modeに依存 */
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 99999;
-            transform: translate(-50%, -50%);
-            mix-blend-mode: exclusion;
-            /* 背景色と反転させる */
-            background-color: transparent;
-            transition: width 0.3s cubic-bezier(0.19, 1, 0.22, 1),
-                height 0.3s cubic-bezier(0.19, 1, 0.22, 1),
-                background-color 0.3s ease;
-        }
-
-        /* カーソル本体の色調整（mix-blend-mode使用時） */
-        #custom-cursor {
-            background-color: #fff;
-            mix-blend-mode: difference;
-            border: none;
-        }
-
-        #custom-cursor.hovered {
-            width: var(--cursor-hover-size);
-            height: var(--cursor-hover-size);
-            background-color: #fff;
-            /* 反転色で目立たせる */
-            mix-blend-mode: difference;
         }
 
 
@@ -586,8 +524,7 @@
             opacity: 0;
             transform: translateY(30px);
             transition: opacity 0.8s ease, transform 0.8s ease;
-            cursor: none;
-            /* ホバー時もカスタムカーソル */
+            cursor: pointer;
         }
 
         .gallery-item.is-visible {
@@ -1037,7 +974,7 @@
             top: 1rem;
             right: 1rem;
             z-index: 20000;
-            cursor: none;
+            cursor: pointer;
             width: 40px;
             height: 40px;
             background-color: rgba(255, 255, 255, 0.9);
