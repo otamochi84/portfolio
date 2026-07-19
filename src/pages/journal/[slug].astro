@@ -63,8 +63,8 @@ if (entry.date) {
 
     <!-- フローティングナビゲーション -->
     <nav class="floating-nav">
-        <a href="/journal/" class="nav-brand link-hover-target">← Journal</a>
-        <a href="#" class="nav-contact-btn link-hover-target">Contact</a>
+        <a href="/#journal" class="nav-brand link-hover-target">← Journal</a>
+        <a href="https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105" target="_blank" rel="noopener noreferrer" class="nav-contact-btn link-hover-target">Contact</a>
     </nav>
 
     <!-- ヘッダー（日付＋カテゴリ → タイトルのシンプル構成） -->
@@ -79,6 +79,11 @@ if (entry.date) {
     <main class="work-article">
         <!-- Notion本文 -->
         <NotionBlocks blocks={blocks} />
+
+        <!-- Journal一覧への導線 -->
+        <div class="work-external-link">
+            <a href="/journal/" class="link-hover-target">View all →</a>
+        </div>
     </main>
 
     <!-- 外部JS読み込み -->
