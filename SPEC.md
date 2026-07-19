@@ -265,15 +265,14 @@ Notionブロック配列をHTMLに変換する。対応ブロックと出力:
 ### 目的
 Notionフォームへの導線を設置し、問い合わせを受けられる状態にする。
 
-### 実装
-- ユーザーからNotionフォームの公開URLを受領する(前提)
-- ナビの `.nav-contact-btn`(現在 `href="#"`)→ Contactセクション(`#contact`)へのアンカースクロールに変更
-- Contactセクションの `links` に「お問い合わせフォーム」を追加(Notionフォームへ新規タブで遷移)
+### 実装(2026-07-19ユーザー決定で変更)
+- ナビの `.nav-contact-btn`(全4ページ: トップ・works詳細・journal一覧・journal詳細)→ Notionフォーム公開URLへ新規タブで直接遷移
+  - URL: `https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105`
+- Contactセクションの `links` は増やさない(アンカースクロール化も行わない)
 - リンク方式を採用(iframe埋め込みは不採用)。理由: Notionフォームのiframe表示は仕様変更に弱く、デザインの統一も難しいため
 
 ### 受け入れ基準
-- ナビのContactボタンでContactセクションへスムーズスクロールする
-- フォームリンクからNotionフォームが開ける
+- 各ページのナビContactボタンからNotionフォームが新規タブで開ける
 
 ---
 
