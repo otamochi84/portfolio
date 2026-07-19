@@ -31,23 +31,38 @@ function renderRichText(richTexts: any[]): string {
     const content = text.plain_text || "";
     const escaped = escapeHtml(content);
     let result = escaped;
+    let shouldSkipDecorations = false;
 
-    // 装飾を適用
-    const annotations = text.annotations || {};
-    if (annotations.code) {
-      result = `<code>${result}</code>`;
-    }
-    if (annotations.italic) {
-      result = `<em>${result}</em>`;
-    }
-    if (annotations.bold) {
-      result = `<strong>${result}</strong>`;
+    // メンション処理（リンク処理より前）
+    if (text.type === "mention" && text.mention?.link_mention) {
+      const lm = text.mention.link_mention;
+      const label = escapeHtml(lm.title || text.plain_text || lm.href);
+      const iconImg = lm.icon_url
+        ? `<img class="notion-mention-icon" src="${escapeHtml(lm.icon_url)}" alt="" loading="lazy">`
+        : "";
+      result = `<a class="notion-mention" href="${escapeHtml(lm.href)}" target="_blank" rel="noopener">${iconImg}${label}</a>`;
+      shouldSkipDecorations = true;
     }
 
-    // リンクの処理
-    if (text.href) {
-      const escapedHref = escapeHtml(text.href);
-      result = `<a href="${escapedHref}" target="_blank" rel="noopener">${result}</a>`;
+    // メンションの場合は装飾処理とリンク処理をスキップ
+    if (!shouldSkipDecorations) {
+      // 装飾を適用
+      const annotations = text.annotations || {};
+      if (annotations.code) {
+        result = `<code>${result}</code>`;
+      }
+      if (annotations.italic) {
+        result = `<em>${result}</em>`;
+      }
+      if (annotations.bold) {
+        result = `<strong>${result}</strong>`;
+      }
+
+      // リンクの処理
+      if (text.href) {
+        const escapedHref = escapeHtml(text.href);
+        result = `<a href="${escapedHref}" target="_blank" rel="noopener">${result}</a>`;
+      }
     }
 
     html += result;
@@ -144,18 +159,63 @@ function renderBlocks(blockList: any[]): string {
       html += `<hr>`;
     } else if (blockType === "callout") {
       const calloutBlock = block.callout || {};
-      const icon = calloutBlock.icon?.emoji || "📝";
       const richText = calloutBlock.rich_text || [];
       const content = renderRichText(richText);
       // Notionで設定した色（gray_background等）をクラス名として付与し、CSS側でNotionと同じ配色を適用する
       const color = calloutBlock.color || "default";
-      html += `<aside class="notion-callout notion-callout-${escapeHtml(color)}"><span class="notion-callout-icon">${escapeHtml(icon)}</span><div>${content}</div></aside>`;
+
+      // アイコン種別ごとにHTMLを組み立てる（絵文字以外は<img>で表示）
+      const iconData = calloutBlock.icon;
+      let iconHtml = "";
+      if (iconData?.type === "emoji") {
+        iconHtml = `<span class="notion-callout-icon">${escapeHtml(iconData.emoji)}</span>`;
+      } else if (iconData?.type === "icon" && iconData.icon?.name) {
+        // Notion組み込みアイコン（notion.soの静的SVGを参照）
+        const iconUrl = `https://www.notion.so/icons/${encodeURIComponent(iconData.icon.name)}_${encodeURIComponent(iconData.icon.color || "gray")}.svg`;
+        iconHtml = `<img class="notion-callout-icon" src="${escapeHtml(iconUrl)}" alt="" loading="lazy">`;
+      } else if (iconData?.type === "custom_emoji" && iconData.custom_emoji?.url) {
+        iconHtml = `<img class="notion-callout-icon" src="${escapeHtml(iconData.custom_emoji.url)}" alt="" loading="lazy">`;
+      } else if (iconData?.type === "external" || iconData?.type === "file") {
+        const url = iconData.external?.url || iconData.file?.url || "";
+        if (url) iconHtml = `<img class="notion-callout-icon" src="${escapeHtml(url)}" alt="" loading="lazy">`;
+      }
+
+      let calloutHtml = `<aside class="notion-callout notion-callout-${escapeHtml(color)}">${iconHtml}<div>${content}`;
+
+      // 子ブロックがあれば処理
+      if (block.children && block.children.length > 0) {
+        calloutHtml += renderBlocks(block.children);
+      }
+
+      calloutHtml += `</div></aside>`;
+      html += calloutHtml;
     } else if (blockType === "code") {
       const codeBlock = block.code || {};
       const richText = codeBlock.rich_text || [];
       // コード内は装飾を無視し、プレーンテキストをそのままエスケープして出力する
       const plainText = richText.map((t: any) => t.plain_text || "").join("");
       html += `<pre class="notion-code"><code>${escapeHtml(plainText)}</code></pre>`;
+    } else if (blockType === "bookmark") {
+      const bookmarkUrl = block.bookmark?.url || "";
+      const ogp = block.ogpData;
+      const captionRichText = block.bookmark?.caption || [];
+      const captionText = renderRichText(captionRichText);
+      const cardTitle = escapeHtml(ogp?.title || bookmarkUrl);
+      const cardDesc = ogp?.description
+        ? `<span class="notion-bookmark-desc">${escapeHtml(ogp.description)}</span>`
+        : "";
+      if (bookmarkUrl) {
+        html += `<a class="notion-bookmark" href="${escapeHtml(bookmarkUrl)}" target="_blank" rel="noopener"><span class="notion-bookmark-title">${cardTitle}</span>${cardDesc}<span class="notion-bookmark-url">${escapeHtml(bookmarkUrl)}</span></a>`;
+        if (captionText) {
+          html += `<p class="notion-bookmark-caption">${captionText}</p>`;
+        }
+      }
+    } else if (blockType === "link_preview") {
+      const linkPreviewBlock = block.link_preview || {};
+      const url = linkPreviewBlock.url || "";
+      if (url) {
+        html += `<p class="notion-bookmark"><a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url)} ↗</a></p>`;
+      }
     } else {
       console.warn(`Unsupported block type: ${blockType}`);
     }

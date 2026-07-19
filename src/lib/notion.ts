@@ -28,6 +28,94 @@ export type NotionBlock = {
 };
 
 /**
+ * ブックマークカード表示用に対象ページのOGP情報を取得（失敗時はnull）
+ */
+export type OgpData = { title: string | null; description: string | null };
+
+/**
+ * OGP情報を取得する関数
+ * @param url 対象URL
+ * @returns OGPデータ（失敗時はnull）
+ */
+export async function fetchOgpData(url: string): Promise<OgpData | null> {
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const html = await response.text();
+
+    // og:title を取得、なければ <title> から取得
+    let title: string | null = null;
+    const ogTitleMatch = html.match(
+      /<meta\s+(?:property="og:title"|name="og:title"|property="og:title"[^>]*content="([^"]*)"[^>]*|[^>]*property="og:title"[^>]*content="([^"]*)")/i
+    );
+    if (ogTitleMatch) {
+      // より柔軟な正規表現
+      const contentMatch = html.match(
+        /<meta\s+[^>]*property\s*=\s*["']og:title["'][^>]*content\s*=\s*["']([^"']*)["']/i
+      );
+      if (contentMatch) {
+        title = contentMatch[1];
+      }
+    }
+
+    if (!title) {
+      const titleTagMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+      if (titleTagMatch) {
+        title = titleTagMatch[1];
+      }
+    }
+
+    // og:description を取得、なければ meta name="description" から取得
+    let description: string | null = null;
+    const ogDescMatch = html.match(
+      /<meta\s+[^>]*property\s*=\s*["']og:description["'][^>]*content\s*=\s*["']([^"']*)["']/i
+    );
+    if (ogDescMatch) {
+      description = ogDescMatch[1];
+    }
+
+    if (!description) {
+      const descMatch = html.match(
+        /<meta\s+[^>]*name\s*=\s*["']description["'][^>]*content\s*=\s*["']([^"']*)["']/i
+      );
+      if (descMatch) {
+        description = descMatch[1];
+      }
+    }
+
+    // HTMLエンティティをデコード
+    const decodeEntities = (str: string): string => {
+      const entities: { [key: string]: string } = {
+        "&amp;": "&",
+        "&quot;": '"',
+        "&#39;": "'",
+        "&lt;": "<",
+        "&gt;": ">",
+      };
+      let result = str;
+      for (const [entity, char] of Object.entries(entities)) {
+        result = result.replace(new RegExp(entity, "g"), char);
+      }
+      return result;
+    };
+
+    return {
+      title: title ? decodeEntities(title) : null,
+      description: description ? decodeEntities(description) : null,
+    };
+  } catch (e) {
+    console.error("OGP fetch error:", e);
+    return null;
+  }
+}
+
+/**
  * 画像をダウンロードしてローカル化する関数
  * @param url ダウンロード対象のURL
  * @param fileName ファイル名（拡張子含む）
@@ -206,6 +294,17 @@ export async function getPageBlocks(pageId: string): Promise<NotionBlock[]> {
           }
         }
 
+        // bookmark タイプのブロックはOGP情報を取得
+        if (blockWithId.type === "bookmark") {
+          const bookmarkBlock = blockWithId.bookmark;
+          const bookmarkUrl = bookmarkBlock?.url;
+
+          if (bookmarkUrl) {
+            const ogpData = await fetchOgpData(bookmarkUrl);
+            blockWithId.ogpData = ogpData;
+          }
+        }
+
         // has_children = true なら子を1階層再帰取得
         if (blockWithId.has_children) {
           const children = await getPageBlocks(blockWithId.id);
@@ -223,6 +322,85 @@ export async function getPageBlocks(pageId: string): Promise<NotionBlock[]> {
     return blocks;
   } catch (err) {
     console.error("Notion API Error (getPageBlocks):", err);
+    return [];
+  }
+}
+
+// Journal の型定義
+export type JournalEntry = {
+  id: string;
+  slug: string; // 日付から自動生成（YYYY-MM-DD または YYYY-MM-DD-2 等）
+  title: string;
+  category: string;
+  date: string; // ISO文字列
+};
+
+/**
+ * 公開状態の活動記録を取得
+ * @returns 公開かつ日付でソートされたJournalEntry配列
+ */
+export async function getJournalEntries(): Promise<JournalEntry[]> {
+  try {
+    const journalDatabaseId = import.meta.env.NOTION_JOURNAL_DB_ID;
+
+    const response = await notion.databases.query({
+      database_id: journalDatabaseId,
+      filter: {
+        property: "公開",
+        checkbox: {
+          equals: true,
+        },
+      },
+      sorts: [
+        {
+          property: "日付",
+          direction: "descending",
+        },
+      ],
+    });
+
+    // 日付が入力されているエントリのみを処理
+    const entriesWithDate = response.results
+      .map((page: any) => {
+        const props = page.properties;
+        const dateObject = props["日付"]?.date;
+
+        // 日付がない場合はスキップ
+        if (!dateObject || !dateObject.start) {
+          return null;
+        }
+
+        const title = props["タイトル"]?.title?.[0]?.plain_text || "名称未設定";
+        const category = props["カテゴリ"]?.select?.name || "";
+        const date = dateObject.start;
+
+        return {
+          id: page.id,
+          title,
+          category,
+          date,
+        };
+      })
+      .filter((entry) => entry !== null) as Array<Omit<JournalEntry, "slug">>;
+
+    // スラッグを自動生成（同じ日付の場合は -2, -3 を付ける）
+    const slugMap = new Map<string, number>();
+    const entries: JournalEntry[] = entriesWithDate.map((entry) => {
+      const dateStr = entry.date.split("T")[0]; // YYYY-MM-DD
+      const count = (slugMap.get(dateStr) || 0) + 1;
+      slugMap.set(dateStr, count);
+
+      const slug = count === 1 ? dateStr : `${dateStr}-${count}`;
+
+      return {
+        ...entry,
+        slug,
+      };
+    });
+
+    return entries;
+  } catch (err) {
+    console.error("Notion API Error (getJournalEntries):", err);
     return [];
   }
 }

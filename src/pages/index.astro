@@ -1,5 +1,5 @@
 ---
-import { getWorks } from "../lib/notion";
+import { getWorks, getJournalEntries } from "../lib/notion";
 
 // Phase 1: テキスト・リンク設定をHTMLに直接展開するためのデータ
 const siteConfig = {
@@ -19,6 +19,9 @@ const siteConfig = {
 
 // Phase 2: getWorks() を使用して実績データを取得
 const works = await getWorks();
+
+// Phase 3: getJournalEntries() を使用して活動記録を取得
+const journalEntries = await getJournalEntries();
 
 // JSに渡すデータの形成（externalUrl と slug を含める）
 const notionData = works.map(work => ({
@@ -123,6 +126,33 @@ const notionData = works.map(work => ({
             </div>
         </header>
 
+        <!-- Journalセクション (活動記録) -->
+        <section id="journal" class="journal-section section-py container-padding">
+            <div class="section-header">
+                <h2 class="section-title">Journal</h2>
+            </div>
+            <div class="journal-list">
+                {journalEntries.slice(0, 5).map((entry) => {
+                    // 日付を YYYY.MM.DD 形式にフォーマット
+                    const dateObj = new Date(entry.date);
+                    const year = dateObj.getFullYear();
+                    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+                    const day = String(dateObj.getDate()).padStart(2, "0");
+                    const dateFormatted = `${year}.${month}.${day}`;
+
+                    return (
+                        <a href={`/journal/${entry.slug}/`} class="journal-row link-hover-target">
+                            <span class="journal-date">{dateFormatted}</span>
+                            <span class="journal-title">{entry.title}</span>
+                        </a>
+                    );
+                })}
+            </div>
+            <div class="view-all-link">
+                <a href="/journal/" class="link-hover-target">View all →</a>
+            </div>
+        </section>
+
         <!-- ギャラリーセクション (Selected Works) -->
         <section id="works" class="gallery-section section-py container-padding">
             <div class="section-header">
@@ -146,11 +176,11 @@ const notionData = works.map(work => ({
         <!-- コンタクトセクション (Contact) -->
         <section class="contact-section section-py container-padding">
             <div class="contact-inner">
+                <div class="section-header">
+                    <h2 class="section-title">Contact</h2>
+                </div>
                 <div class="contact-grid">
                     <div>
-                        <h2 class="contact-heading">
-                            Contact
-                        </h2>
                         <p class="contact-subtext">Whenever you're ready.</p>
                     </div>
                     <div style="display: flex; flex-direction: column; justify-content: flex-end;">

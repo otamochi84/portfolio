@@ -10,13 +10,19 @@
 
 別マシンのセッションから作業を再開するためのメモ。**着手前に必ずこのセクションを読むこと。**
 
-### 進捗状況
+### 進捗状況(2026-07-19更新)
 - **Phase 1: 完了**(コミット `c96c7d8`)
-- **Phase 2: 完了 + デザイン反復調整済み**(コミット `cd586a4`)。すべてpush済み、未コミットの変更なし
-- **次のタスク(この順で)**:
-  1. Phase 2の微修正(修正内容はユーザーがセッション内で指示する。実装はHaiku)
-  2. Phase 3: Journal(3-0のDB作成から)
-  3. Phase 4 → Phase 5
+- **Phase 2: 完了 + デザイン反復調整済み**(コミット `cd586a4` → 微修正 `031dbca`: 概要リード文削除・前後ナビ化)
+- **Phase 3: 完了 + デザイン反復調整済み**(Journal実装。詳細は下記「Phase 3の実装は仕様から変更済み」)
+- **次のタスク(この順で)**: Phase 4(Contact整備。Notionフォーム公開URLをユーザーから受領して着手) → Phase 5
+
+### Phase 3の実装は仕様から以下の点が変更済み(ユーザーとの調整結果。戻さないこと)
+- スラッグプロパティ廃止。URLは日付から自動生成(`/journal/YYYY-MM-DD/`、同日2件目以降 `-2`)
+- 行リスト(トップ・一覧)はカテゴリ非表示の「日付 / タイトル」2カラム
+- 詳細ページは日付の横にカテゴリをNotionタグ風バッジで表示(背景 `#f7e7de` × 文字 `#b3592f`=Claude風テラコッタ。今後のアクセント色)
+- Journalセクションはトップの最初のセクション(ヒーロー直後)に配置
+- セクション背景は白/グレー互い違い(ヒーロー灰→Journal白→Works灰→About白→Contact灰)。Contactの黒背景は廃止し、見出しは `section-title` + Quicksand・罫線なし
+- NotionBlocks拡張: callout子ブロック描画、link_mention(ファビコン+タイトル)、bookmark(ビルド時OGP取得のNotion風カード)、組み込みアイコン対応
 
 ### Phase 2の実装は仕様(2-3)から以下の点が変更済み(ユーザーとの調整結果。戻さないこと)
 - **サムネイル画像は詳細ページに表示しない**(モーダルと情報が重複するため削除)
@@ -27,7 +33,7 @@
 - コールアウト/コードブロックの配色はNotionライトテーマの実色に合わせた(works.css参照)
 
 ### 運用ルール(このプロジェクト固有)
-- **コード実装はHaikuサブエージェント**(Agentツールで `model: haiku` 指定)に委任し、上位モデルはレビュー・検証に徹する(クレジット節約のためユーザーが明示的に指示)
+- **コード実装はOpus 4.8サブエージェント**(Agentツールで `model: opus` 指定)に委任し、メインスレッドはレビュー・検証に徹する(2026-07-19にHaikuから変更。Haikuは指示範囲外の変更や仕上がりの粗さが目立ったため)
 - Notion操作は `ntn` CLI。DB構造を触る前にNotion内の「NOTION.md」(ページID `e84cafd5-d2df-40d5-9819-d3fc5685c4fd`)を必読
 - コミットメッセージ末尾に `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` トレーラーを付ける
 - 各Phase完了ごとにユーザー確認 → コミット
@@ -40,8 +46,9 @@
 - 一発で決めず「行ったり来たり」で詰めるスタイル。小さな修正指摘が続くのは正常
 
 ### 環境メモ
-- `.env` に `NOTION_API_KEY` / `NOTION_DATABASE_ID` が必要(gitに含めない)。Phase 3-0完了時に `NOTION_JOURNAL_DB_ID` を追記する
+- `.env` に `NOTION_API_KEY` / `NOTION_DATABASE_ID` / `NOTION_JOURNAL_DB_ID` が必要(gitに含めない)
 - HP_Works: database_id `5556c055-b6b6-4e35-b70b-8d9e8a432059` / data_source_id `42bc74c6-9713-49a3-8f7f-8e6241d4d93d`
+- HP_Journal: database_id `21bc13ea-d3c8-4e8d-a238-1a0bd587a505` / data_source_id `5f2b7456-2cdb-4547-9d2b-5eaed42c2376`(Phase 3-0で作成済み・HPページ内)
 - 既知の未解決(対応Phaseで処理): og:imageが相対パス(Phase 5で `astro.config` に `site` 設定)、ナビContactボタンが `href="#"`(Phase 4)
 
 ---
@@ -218,24 +225,27 @@ Notionブロック配列をHTMLに変換する。対応ブロックと出力:
 ### 目的
 活動ログをNotionで書き、サイトに時系列表示する。「Notionで活動を記録→そのまま発信」の実演。
 
-### 3-0. Notion DB新規作成(上位モデルが担当・NOTION.md準拠)
-`HP_Journal` データベースを作成:
+### 3-0. Notion DB新規作成(上位モデルが担当・NOTION.md準拠)【完了】
+`HP_Journal` データベースを作成済み(IDは環境メモ参照):
 
 | プロパティ名 | 型 | 用途 |
 |---|---|---|
 | `タイトル` | title | 記事タイトル |
-| `日付` | date | 表示・ソート用(降順) |
-| `カテゴリ` | select | 例: `制作`, `学び`, `お知らせ`, `イベント` |
-| `スラッグ` | rich_text | 詳細ページURL用(任意。無ければ一覧のみ) |
+| `日付` | date | 表示・ソート用(降順)。詳細ページURLにも使用 |
+| `カテゴリ` | select | `制作`, `学び`, `お知らせ`, `イベント` |
 | `公開` | checkbox | ONのみ表示 |
 
-作成後、`.env` に `NOTION_JOURNAL_DB_ID` を追加する。
+※ スラッグプロパティは廃止(ユーザー決定)。URLは `日付` から自動生成する。
+`.env` に `NOTION_JOURNAL_DB_ID` を追加済み。
 
 ### 3-1. 実装
 - `src/lib/notion.ts` に `getJournalEntries()` を追加(型は `JournalEntry`。取得方針はWorksと同じ)
+- **スラッグは日付から自動生成**: `YYYY-MM-DD` 形式(例: `/journal/2026-07-10/`)。
+  同日に複数記事がある場合、2件目以降に `-2`, `-3` を付ける(並びはNotion取得順)。
+  日付未入力の記事は一覧・詳細とも表示しない
 - トップページに `Journal` セクションを新設(About と Contact の間):
   - 最新5件を「日付 / カテゴリ / タイトル」の行リストで表示(ミニマルなテキスト主体。ギャラリーとの対比で静的に)
-  - 各行はスラッグがあれば `/journal/{slug}/` へリンク
+  - 各行は `/journal/{slug}/` へリンク
   - セクション末尾に「View all →」で `/journal/` へ
 - `src/pages/journal/index.astro`(新規): 全件を年ごとにグルーピングして一覧表示
 - `src/pages/journal/[slug].astro`(新規): Works詳細と同じレイアウト基盤 + `NotionBlocks` で本文表示

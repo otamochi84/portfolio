@@ -517,7 +517,7 @@
         }
 
         .gallery-section {
-            background-color: #fff;
+            background-color: #f8f8f8;
             position: relative;
             z-index: 20;
         }
@@ -647,7 +647,7 @@
 
         /* --- フリーテキストセクション --- */
         .text-section {
-            background-color: #f8f8f8;
+            background-color: #fff;
             position: relative;
             z-index: 20;
         }
@@ -684,12 +684,109 @@
             font-family: 'Quicksand', 'Noto Sans JP', sans-serif;
         }
 
+        /* --- Journalセクション --- */
+        .journal-section {
+            background-color: #fff;
+            position: relative;
+            z-index: 20;
+        }
+
+        .journal-list {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .journal-row {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 1.5rem;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid #e5e7eb;
+            color: var(--text-main);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .journal-row:last-child {
+            border-bottom: none;
+        }
+
+        .journal-row:hover {
+            opacity: 0.7;
+            transform: translateX(8px);
+        }
+
+        @media (max-width: 767px) {
+            .journal-row {
+                grid-template-columns: 1fr;
+                gap: 0.25rem;
+                padding: 0.75rem 0;
+            }
+        }
+
+        .journal-date {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-sub);
+        }
+
+        @media (max-width: 767px) {
+            .journal-date {
+                font-size: 0.85rem;
+            }
+        }
+
+        .journal-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        @media (max-width: 767px) {
+            .journal-title {
+                font-size: 0.9rem;
+            }
+        }
+
+        .view-all-link {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .view-all-link a {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-main);
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+
+        .view-all-link a:hover {
+            border-bottom-color: var(--text-main);
+        }
+
         /* --- Contact / Footer --- */
         .contact-section {
-            background-color: var(--bg-footer);
-            color: #fff;
+            background-color: #f8f8f8;
+            color: var(--text-main);
             position: relative;
             padding-bottom: 3rem;
+        }
+
+        /* Contactの見出しはWelcome!と同じフォントにし、罫線なし・サブテキストとの間隔を詰める */
+        .contact-section .section-title {
+            font-family: 'Quicksand', sans-serif;
+        }
+
+        .contact-section .section-header {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0.75rem;
         }
 
         .contact-inner {
@@ -719,33 +816,20 @@
             margin-bottom: 2rem;
         }
 
-        .contact-heading {
-            font-size: 1.75rem;
-            font-weight: 400;
-            letter-spacing: -0.025em;
-            margin-bottom: 3.5rem;
-            line-height: 1.2;
-        }
-
         .contact-subtext {
             font-family: 'Quicksand', sans-serif;
             font-size: 0.9rem;
             font-weight: 500;
-            color: #9ca3af;
-            margin-top: -3rem;
+            color: var(--text-sub);
+            margin-top: 0;
             margin-bottom: 4rem;
             line-height: 1.6;
         }
 
         @media (min-width: 768px) {
-            .contact-heading {
-                font-size: 2.75rem;
-                margin-bottom: 4.5rem;
-            }
-
             .contact-subtext {
                 font-size: 1.1rem;
-                margin-top: -4rem;
+                margin-top: 0;
                 margin-bottom: 5rem;
             }
         }
@@ -757,7 +841,7 @@
         }
 
         .link-item {
-            border-bottom: 1px solid #1f2937;
+            border-bottom: 1px solid #e5e7eb;
             padding-bottom: 1rem;
             position: relative;
         }
@@ -787,7 +871,7 @@
         }
 
         .link-anchor:hover .link-label {
-            color: #d1d5db;
+            color: #6b7280;
         }
 
         .link-arrow {
@@ -803,7 +887,7 @@
         .footer-bottom {
             margin-top: 8rem;
             padding-top: 2rem;
-            border-top: 1px solid #1f2937;
+            border-top: 1px solid #e5e7eb;
             display: flex;
             flex-direction: column;
             justify-content: space-between;

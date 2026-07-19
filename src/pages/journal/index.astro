@@ -1,0 +1,99 @@
+---
+import { getJournalEntries } from "../../lib/notion";
+
+// 全件の活動記録を取得
+const journalEntries = await getJournalEntries();
+
+// 年ごとにグルーピング
+type GroupedByYear = {
+  [year: number]: typeof journalEntries;
+};
+
+const groupedEntries = journalEntries.reduce((acc: GroupedByYear, entry) => {
+  const year = new Date(entry.date).getFullYear();
+  if (!acc[year]) {
+    acc[year] = [];
+  }
+  acc[year].push(entry);
+  return acc;
+}, {} as GroupedByYear);
+
+// 年を降順でソート
+const sortedYears = Object.keys(groupedEntries)
+  .map(Number)
+  .sort((a, b) => b - a);
+---
+
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#f8f8f8">
+
+    <title>Journal | otamochi portfolio</title>
+
+    <!-- アニメーションライブラリ Anime.js -->
+    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+    <!-- Google Fonts 読み込み -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Quicksand:wght@500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- CSS読み込み -->
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/journal.css">
+</head>
+
+<body class="antialiased">
+
+    <!-- カスタムカーソル要素 -->
+    <div id="custom-cursor"></div>
+
+    <!-- フローティングナビゲーション -->
+    <nav class="floating-nav">
+        <a href="/" class="nav-brand link-hover-target">← Home</a>
+        <a href="#" class="nav-contact-btn link-hover-target">Contact</a>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main class="journal-archive">
+        <!-- ヘッダー -->
+        <header class="journal-archive-header">
+            <h1 class="journal-archive-title">Journal</h1>
+            <p class="journal-archive-subtitle">Activity Log</p>
+        </header>
+
+        <!-- 年ごとのグループ -->
+        {sortedYears.map((year) => (
+            <section class="journal-year-section">
+                <h2 class="journal-year-heading">{year}</h2>
+                <div class="journal-list">
+                    {groupedEntries[year].map((entry) => {
+                        // 日付を YYYY.MM.DD 形式にフォーマット
+                        const dateObj = new Date(entry.date);
+                        const dateYear = dateObj.getFullYear();
+                        const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+                        const day = String(dateObj.getDate()).padStart(2, "0");
+                        const dateFormatted = `${dateYear}.${month}.${day}`;
+
+                        return (
+                            <a href={`/journal/${entry.slug}/`} class="journal-row link-hover-target">
+                                <span class="journal-date">{dateFormatted}</span>
+                                <span class="journal-title">{entry.title}</span>
+                            </a>
+                        );
+                    })}
+                </div>
+            </section>
+        ))}
+    </main>
+
+    <!-- 外部JS読み込み -->
+    <script is:inline src="/js/main.js"></script>
+</body>
+
+</html>

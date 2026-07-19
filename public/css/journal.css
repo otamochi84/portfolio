@@ -1,0 +1,112 @@
+/* ==========================================================================
+   journal.css - Journal一覧・詳細ページ専用スタイル
+   ========================================================================== */
+
+/* Archive ページのレイアウト */
+.journal-archive {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 120px 1.5rem 4rem 1.5rem;
+    background-color: var(--bg-body);
+    color: var(--text-main);
+}
+
+@media (min-width: 768px) {
+    .journal-archive {
+        padding: 140px 3rem 4rem 3rem;
+    }
+}
+
+/* Archive ヘッダー */
+.journal-archive-header {
+    margin-bottom: 4rem;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 2.5rem;
+}
+
+.journal-archive-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+}
+
+@media (min-width: 768px) {
+    .journal-archive-title {
+        font-size: 3rem;
+    }
+}
+
+.journal-archive-subtitle {
+    font-size: 0.95rem;
+    color: var(--text-sub);
+    font-weight: 500;
+}
+
+/* 年ごとのセクション */
+.journal-year-section {
+    margin-bottom: 3.5rem;
+}
+
+.journal-year-heading {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--text-main);
+    letter-spacing: -0.01em;
+}
+
+@media (min-width: 768px) {
+    .journal-year-heading {
+        font-size: 1.6rem;
+    }
+}
+
+
+/* スマートフォン対応 */
+@media (max-width: 767px) {
+    .journal-archive {
+        padding: 80px 1rem 2rem 1rem;
+    }
+
+    .journal-archive-header {
+        margin-bottom: 2.5rem;
+        padding-bottom: 1.5rem;
+    }
+
+    .journal-archive-title {
+        font-size: 1.6rem;
+    }
+
+    .journal-archive-subtitle {
+        font-size: 0.85rem;
+    }
+
+    .journal-year-section {
+        margin-bottom: 2.5rem;
+    }
+
+    .journal-year-heading {
+        font-size: 1.2rem;
+    }
+}
+
+/* 詳細ページの日付行（日付とカテゴリを上下センター揃えで横並び） */
+.work-header .work-date {
+    display: flex;
+    align-items: center;
+    gap: 1.25em;
+}
+
+/* 日付横のカテゴリ（Notionタグ風バッジ・Claude風テラコッタ配色） */
+.journal-detail-category {
+    background-color: #f7e7de;
+    color: #b3592f;
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1.6;
+    padding: 0.1em 0.65em;
+    border-radius: 4px;
+}

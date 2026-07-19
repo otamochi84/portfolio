@@ -1,0 +1,88 @@
+---
+import { getJournalEntries, getPageBlocks } from "../../lib/notion";
+import NotionBlocks from "../../components/NotionBlocks.astro";
+
+// 静的パス生成: 全活動記録からパス生成
+export async function getStaticPaths() {
+  const entries = await getJournalEntries();
+  return entries.map((entry) => ({
+    params: { slug: entry.slug },
+    props: { entry },
+  }));
+}
+
+interface Props {
+  entry: any;
+}
+
+const { entry } = Astro.props;
+
+// ページの本文ブロック取得
+const blocks = await getPageBlocks(entry.id);
+
+// 日付フォーマット: YYYY.MM.DD
+let dateFormatted = "";
+if (entry.date) {
+  const dateObj = new Date(entry.date);
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const day = String(dateObj.getDate()).padStart(2, "0");
+  dateFormatted = `${year}.${month}.${day}`;
+}
+---
+
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#f8f8f8">
+
+    <title>{entry.title} | otamochi portfolio</title>
+
+    <!-- アニメーションライブラリ Anime.js -->
+    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+    <!-- Google Fonts 読み込み -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Quicksand:wght@500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- CSS読み込み -->
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/works.css">
+    <link rel="stylesheet" href="/css/journal.css">
+</head>
+
+<body class="antialiased">
+
+    <!-- カスタムカーソル要素 -->
+    <div id="custom-cursor"></div>
+
+    <!-- フローティングナビゲーション -->
+    <nav class="floating-nav">
+        <a href="/journal/" class="nav-brand link-hover-target">← Journal</a>
+        <a href="#" class="nav-contact-btn link-hover-target">Contact</a>
+    </nav>
+
+    <!-- ヘッダー（日付＋カテゴリ → タイトルのシンプル構成） -->
+    <header class="work-header">
+        {dateFormatted && <p class="work-date">{dateFormatted}{entry.category && <span class="journal-detail-category">{entry.category}</span>}</p>}
+
+        <!-- タイトル -->
+        <h1 class="work-title">{entry.title}</h1>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="work-article">
+        <!-- Notion本文 -->
+        <NotionBlocks blocks={blocks} />
+    </main>
+
+    <!-- 外部JS読み込み -->
+    <script is:inline src="/js/main.js"></script>
+</body>
+
+</html>
