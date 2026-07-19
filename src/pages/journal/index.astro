@@ -22,6 +22,10 @@ const groupedEntries = journalEntries.reduce((acc: GroupedByYear, entry) => {
 const sortedYears = Object.keys(groupedEntries)
   .map(Number)
   .sort((a, b) => b - a);
+
+// メタ情報
+const metaDescription = "otamochiの活動記録。制作・学び・お知らせを時系列で掲載。";
+const pageUrl = new URL("/journal/", Astro.site).href;
 ---
 
 <!DOCTYPE html>
@@ -33,10 +37,26 @@ const sortedYears = Object.keys(groupedEntries)
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#f8f8f8">
 
+    <meta name="description" content={metaDescription}>
+
     <title>Journal | otamochi portfolio</title>
 
-    <!-- アニメーションライブラリ Anime.js -->
-    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+    <!-- OGP タグ -->
+    <meta property="og:title" content="Journal | otamochi portfolio">
+    <meta property="og:description" content={metaDescription}>
+    <meta property="og:type" content="website">
+    <meta property="og:url" content={pageUrl}>
+
+    <!-- canonical -->
+    <link rel="canonical" href={pageUrl}>
+
+    <!-- Google Fontsへの事前接続（表示高速化） -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <!-- Google Fonts 読み込み -->
     <link
@@ -88,9 +108,6 @@ const sortedYears = Object.keys(groupedEntries)
             </section>
         ))}
     </main>
-
-    <!-- 外部JS読み込み -->
-    <script is:inline src="/js/main.js"></script>
 </body>
 
 </html>

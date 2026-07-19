@@ -32,6 +32,10 @@ const olderWork = currentIndex !== -1 && currentIndex < sluggedWorks.length - 1 
 // メタディスクリプション: 概要の先頭120字（改行はスペースに置換）
 const metaDescription = (work.overview || "").substring(0, 120).replace(/\n/g, " ");
 
+// OGP・canonical用の絶対URL
+const pageUrl = new URL(`/works/${work.slug}/`, Astro.site).href;
+const ogImage = new URL(work.thumbnail, Astro.site).href;
+
 // 実施時期フォーマット: YYYY.MM (nullなら空文字)
 let dateFormatted = "";
 if (work.date) {
@@ -52,16 +56,25 @@ if (work.date) {
     <meta name="theme-color" content="#f8f8f8">
     <meta name="description" content={metaDescription}>
 
+    <title>{work.title} | otamochi portfolio</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
     <!-- OGP タグ -->
     <meta property="og:title" content={`${work.title} | otamochi portfolio`}>
     <meta property="og:description" content={metaDescription}>
     <meta property="og:type" content="article">
-    <meta property="og:image" content={work.thumbnail}>
+    <meta property="og:image" content={ogImage}>
+    <meta property="og:url" content={pageUrl}>
 
-    <title>{work.title} | otamochi portfolio</title>
+    <!-- canonical -->
+    <link rel="canonical" href={pageUrl}>
 
-    <!-- アニメーションライブラリ Anime.js -->
-    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- Google Fontsへの事前接続（表示高速化） -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <!-- Google Fonts 読み込み -->
     <link
@@ -135,9 +148,6 @@ if (work.date) {
             </nav>
         )}
     </main>
-
-    <!-- 外部JS読み込み -->
-    <script is:inline src="/js/main.js"></script>
 </body>
 
 </html>

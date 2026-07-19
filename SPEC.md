@@ -33,7 +33,7 @@
 - コールアウト/コードブロックの配色はNotionライトテーマの実色に合わせた(works.css参照)
 
 ### 運用ルール(このプロジェクト固有)
-- **コード実装はOpus 4.8サブエージェント**(Agentツールで `model: opus` 指定)に委任し、メインスレッドはレビュー・検証に徹する(2026-07-19にHaikuから変更。Haikuは指示範囲外の変更や仕上がりの粗さが目立ったため)
+- **コード実装はSonnet 5サブエージェント**(Agentツールで `model: sonnet` 指定・effort medium相当)に委任し、メインスレッドはレビュー・検証に徹する(履歴: Haiku→2026-07-19にOpus 4.8→2026-07-20にSonnet 5へ。ユーザー指示)
 - Notion操作は `ntn` CLI。DB構造を触る前にNotion内の「NOTION.md」(ページID `e84cafd5-d2df-40d5-9819-d3fc5685c4fd`)を必読
 - コミットメッセージ末尾に `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` トレーラーを付ける
 - 各Phase完了ごとにユーザー確認 → コミット
@@ -54,7 +54,7 @@
 - `.env` に `NOTION_API_KEY` / `NOTION_DATABASE_ID` / `NOTION_JOURNAL_DB_ID` が必要(gitに含めない)
 - HP_Works: database_id `5556c055-b6b6-4e35-b70b-8d9e8a432059` / data_source_id `42bc74c6-9713-49a3-8f7f-8e6241d4d93d`
 - HP_Journal: database_id `21bc13ea-d3c8-4e8d-a238-1a0bd587a505` / data_source_id `5f2b7456-2cdb-4547-9d2b-5eaed42c2376`(Phase 3-0で作成済み・HPページ内)
-- 既知の未解決(対応Phaseで処理): og:imageが相対パス(Phase 5で `astro.config` に `site` 設定)、ナビContactボタンが `href="#"`(Phase 4)
+- 本番URL: `https://otamochi.com`(`astro.config` の `site` に設定済み)。旧・既知の未解決(og:image相対パス/Contactボタン `href="#"`)はどちらも解決済み
 
 ---
 
@@ -278,17 +278,45 @@ Notionフォームへの導線を設置し、問い合わせを受けられる�
 
 ---
 
-## Phase 5: デザイン磨き込み(上位モデル + ユーザーで実施)
+## Phase 5: デザイン磨き込み(メインスレッド + ユーザーで実施)
 
-Haikuには任せず、対話しながら詰める。候補リスト:
+対話しながら詰める。Apple等の洗練系サイトを参照点にする。
+**ツールの棲み分け(2026-07-20決定): デザイン案の探索はClaude Design(claude.ai/design、デザインシステム同期済み)、コード修正はCLIで実施。**
 
-- [ ] 開場アニメーションのイージング・タイミング微調整
-- [ ] Worksギャラリーのホバー表現(画像ズーム・キャプション出現の質感)
-- [ ] 詳細ページのタイポグラフィ(行間・見出しのジャンプ率)
-- [ ] Journalセクションの行ホバー演出
-- [ ] スマホでの余白・フォントサイズ最適化
-- [ ] OGP画像(SNSシェア時の見た目)の設計
-- [ ] favicon・メタ情報の整備
+### 完了済み(2026-07-20)
+- [x] SEO/OGP整備: 全ページのmeta description・OGP・canonical・favicon設置、`site: https://otamochi.com` 設定、works詳細og:image絶対URL化
+- [x] パフォーマンス: サブページの不要JS(anime.js/main.js)削除、defer化、preconnect追加
+- [x] アクセシビリティ: focus-visibleリング(テラコッタ)、ギャラリーのキーボード操作、モーダルEsc閉じ、prefers-reduced-motion対応、スムーズスクロール
+- [x] ギャラリーカードにホバーリング表示、scrollインジケーター削除、カスタムカーソル削除
+
+### 残タスク(カテゴリ別)
+**A. ビジュアルアイデンティティ**
+- [ ] ロゴ制作 → ナビ左上の設置予定地へ
+- [ ] OGP画像の設計(トップ・journal用。現在og:imageなし)
+- [ ] apple-touch-icon(180px PNG。ロゴと同時制作が効率的)
+- [ ] favicon見直し(ロゴ確定後)
+
+**B. タイポグラフィ**
+- [ ] 詳細ページ本文の行間・見出しジャンプ率
+- [ ] 日英混在部分のウェイト・字間の統一感
+- [ ] スマホでのフォントサイズ最適化
+
+**C. モーション・インタラクション**
+- [ ] 開場アニメーションのイージング・タイミング微調整(現状やや長め)
+- [ ] Worksギャラリーのホバー質感(画像ズーム・キャプション出現)
+- [ ] Journal行のホバー演出見直し(現状opacity+右スライド)
+- [ ] スクロールフェードインの適用範囲(現在ギャラリーのみ)
+
+**D. レイアウト・余白**
+- [ ] セクション余白のリズム(現在全セクション一律8rem)
+- [ ] ヒーロー(ファーストビュー)の情報量・構成
+- [ ] モーダルのデザイン磨き込み
+- [ ] スマホでの余白最適化
+
+**E. 細部品質(技術)**
+- [ ] 画像へのwidth/height付与(CLS対策。Notion画像ダウンロード時にサイズ記録)
+- [ ] 404ページ作成
+- [ ] Notion画像の最適化(圧縮・フォーマット検討)
 
 ---
 

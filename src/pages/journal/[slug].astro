@@ -20,6 +20,21 @@ const { entry } = Astro.props;
 // ページの本文ブロック取得
 const blocks = await getPageBlocks(entry.id);
 
+// メタディスクリプション: 本文の最初の段落から先頭120字（改行はスペースに置換）
+// 段落が無ければタイトルを使う
+const firstParagraph = blocks.find((block: any) => block.type === "paragraph");
+const firstParagraphText = firstParagraph
+  ? (firstParagraph.paragraph?.rich_text || [])
+      .map((rt: any) => rt.plain_text || "")
+      .join("")
+  : "";
+const metaDescription = (firstParagraphText || entry.title)
+  .substring(0, 120)
+  .replace(/\n/g, " ");
+
+// OGP・canonical用の絶対URL
+const pageUrl = new URL(`/journal/${entry.slug}/`, Astro.site).href;
+
 // 日付フォーマット: YYYY.MM.DD
 let dateFormatted = "";
 if (entry.date) {
@@ -40,10 +55,26 @@ if (entry.date) {
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#f8f8f8">
 
+    <meta name="description" content={metaDescription}>
+
     <title>{entry.title} | otamochi portfolio</title>
 
-    <!-- アニメーションライブラリ Anime.js -->
-    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+    <!-- OGP タグ（og:imageはなし） -->
+    <meta property="og:title" content={`${entry.title} | otamochi portfolio`}>
+    <meta property="og:description" content={metaDescription}>
+    <meta property="og:type" content="article">
+    <meta property="og:url" content={pageUrl}>
+
+    <!-- canonical -->
+    <link rel="canonical" href={pageUrl}>
+
+    <!-- Google Fontsへの事前接続（表示高速化） -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <!-- Google Fonts 読み込み -->
     <link
@@ -82,9 +113,6 @@ if (entry.date) {
             <a href="/journal/" class="link-hover-target">View all →</a>
         </div>
     </main>
-
-    <!-- 外部JS読み込み -->
-    <script is:inline src="/js/main.js"></script>
 </body>
 
 </html>

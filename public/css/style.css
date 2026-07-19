@@ -30,6 +30,7 @@
             background-color: var(--bg-body);
             overscroll-behavior-y: none;
             /* バウンススクロール防止 */
+            scroll-behavior: smooth;
         }
 
         body {
@@ -49,6 +50,20 @@
 
         ul {
             list-style: none;
+        }
+
+        /* キーボード操作時のフォーカスリング（アクセントのテラコッタ） */
+        a:focus-visible,
+        button:focus-visible,
+        [role="button"]:focus-visible {
+            outline: 2px solid #b3592f;
+            outline-offset: 3px;
+        }
+
+        /* ギャラリーカードはホバーでもリングを表示（マウス操作時の手がかり） */
+        .gallery-item:hover {
+            outline: 2px solid #b3592f;
+            outline-offset: 3px;
         }
 
 
@@ -368,61 +383,6 @@
             .br-mobile {
                 display: none;
             }
-        }
-
-        /* スクロール指示 */
-        .scroll-indicator {
-            position: absolute;
-            bottom: 1.5rem;
-            left: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            /* アニメーション用 */
-            opacity: 0;
-            transform: translateY(20px);
-            transform-origin: bottom;
-        }
-
-        @media (min-width: 768px) {
-            .scroll-indicator {
-                left: 6rem;
-                bottom: 3rem;
-            }
-        }
-
-        @media (max-height: 700px) {
-            .scroll-indicator {
-                display: none;
-            }
-        }
-
-        /* スクロールのバウンドアニメーション */
-        @keyframes bounce-slow {
-
-            0%,
-            100% {
-                transform: translateY(0);
-            }
-
-            50% {
-                transform: translateY(10px);
-            }
-        }
-
-        .scroll-text {
-            font-size: 10px;
-            font-weight: 500;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            writing-mode: horizontal-tb;
-            transform: none;
-        }
-
-        .scroll-line {
-            width: 1px;
-            height: 70px;
-            background-color: #000;
         }
 
         /* --- ギャラリー --- */
@@ -987,4 +947,19 @@
 
         .close-btn:hover svg {
             transform: rotate(90deg);
+        }
+
+        /* 動きを減らす設定のユーザーにはアニメーション・スムーズスクロールを無効化 */
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
         }

@@ -23,6 +23,12 @@ const works = await getWorks();
 // Phase 3: getJournalEntries() を使用して活動記録を取得
 const journalEntries = await getJournalEntries();
 
+// サイトの基準URL（OGP・canonicalに使用）
+const siteUrl = Astro.site?.href ?? "https://otamochi.com/";
+
+// メタディスクリプション（トップページ共通）
+const metaDescription = "奈良を拠点に、中小企業・個人向けのNotion導入・構築を支援するotamochiのポートフォリオサイト。データベース設計・自動化・テンプレート制作の実績と活動記録。";
+
 // JSに渡すデータの形成（externalUrl と slug を含める）
 const notionData = works.map(work => ({
     id: work.id,
@@ -47,10 +53,33 @@ const notionData = works.map(work => ({
     <!-- ブラウザのアドレスバー等の色設定 -->
     <meta name="theme-color" content="#f8f8f8">
 
+    <meta name="description" content={metaDescription}>
+
     <title>otamochi portfolio</title>
 
-    <!-- アニメーションライブラリ Anime.js -->
-    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+    <!-- OGP タグ（og:imageは画像未制作のため未設定） -->
+    <meta property="og:title" content="otamochi portfolio">
+    <meta property="og:description" content={metaDescription}>
+    <meta property="og:type" content="website">
+    <meta property="og:url" content={siteUrl}>
+
+    <!-- canonical -->
+    <link rel="canonical" href={siteUrl}>
+
+    <!-- 外部ドメインへの事前接続（表示高速化） -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- アニメーションライブラリ Anime.js（deferで非同期読み込み） -->
+    <script is:inline defer src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+    <!-- 外部JSの読み込み（deferでanime.jsの後に実行） -->
+    <script is:inline defer src="/js/main.js"></script>
 
     <!-- Google Fonts 読み込み (Noto Sans JP, Quicksand, Jost) -->
     <link
@@ -112,12 +141,6 @@ const notionData = works.map(work => ({
                     <span class="copy-line">Building how work flows</span>
                     <span class="copy-line-accent">— <span class="accent-highlight">with Notion.</span></span>
                 </div>
-            </div>
-
-            <!-- スクロールインジケーター -->
-            <div class="scroll-indicator">
-                <span class="scroll-text">Scroll</span>
-                <div class="scroll-line"></div>
             </div>
         </header>
 
@@ -201,7 +224,7 @@ const notionData = works.map(work => ({
     <!-- カード型モーダル -->
     <div id="content-modal" onclick="closeModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
-            <div class="close-btn link-hover-target" onclick="closeModal(event)">
+            <div class="close-btn link-hover-target" onclick="closeModal(event)" role="button" tabindex="0" aria-label="閉じる">
                 <svg viewBox="0 0 60 60" fill="none">
                     <path d="M20 20L40 40M40 20L20 40" stroke="#111" stroke-width="3" stroke-linecap="round" />
                 </svg>
@@ -238,9 +261,6 @@ const notionData = works.map(work => ({
     <script is:inline define:vars={{ notionData }}>
         window.notionDataFromAstro = notionData;
     </script>
-
-    <!-- 外部JSの読み込み -->
-    <script is:inline src="/js/main.js"></script>
 </body>
 
 </html>
