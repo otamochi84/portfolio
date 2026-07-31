@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Zen+Old+Mincho:wght@400&family=EB+Garamond:wght@400&display=swap" rel="stylesheet">
+<script src="_ds/otamochi-portfolio-55a34325-3156-4276-af3a-10292a56ebc2/_ds_bundle.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Futura', 'Jost', 'Noto Sans JP', sans-serif; background: #f8f8f8; color: #111; -webkit-font-smoothing: antialiased; overflow-x: hidden; text-wrap: pretty; }
+  html { scroll-behavior: smooth; }
+  a { color: inherit; text-decoration: none; }
+  a:focus-visible { outline: 2px solid #b3592f; outline-offset: 3px; }
+  .gallery-item:hover { outline: 2px solid #b3592f; outline-offset: 3px; }
+  .gallery-item .gi-media { transition: transform 1.5s cubic-bezier(0.19,1,0.22,1); }
+  .gallery-item:hover .gi-media { transform: scale(1.05); }
+  .gallery-item .gi-overlay { opacity: 0; transition: opacity 0.5s ease; }
+  .gallery-item:hover .gi-overlay { opacity: 1; }
+  .jrow .jrow-title { transition: transform 0.5s cubic-bezier(0.19,1,0.22,1); }
+  .jrow:hover .jrow-title { transform: translateX(10px); }
+  .jrow .jrow-arrow { opacity: 0; transition: opacity 0.4s ease; }
+  .jrow:hover .jrow-arrow { opacity: 1; }
+  .nlink { transition: color 0.3s ease; }
+  .nlink:hover { color: #111; }
+  .nicon { transition: color 0.3s ease; }
+  .nicon:hover { color: #111; }
+  /* アップロード写真に共通のくすみフィルターを常時適用 */
+  .kv-tone image-slot img, .kv-tone image-slot::part(image) { filter: saturate(0.78) contrast(0.94) sepia(0.1) brightness(1.02); }
+  .kv-tone { position: relative; }
+  .kv-tone::after { content: ''; position: absolute; inset: 0; background-color: #b3592f; opacity: 0.07; mix-blend-mode: multiply; pointer-events: none; z-index: 2; }
+  section[id] { scroll-margin-top: 92px; }
+  @keyframes introPanel {
+    0%, 68% { transform: translateY(0); visibility: visible; }
+    99.9% { transform: translateY(-101%); visibility: visible; }
+    100% { transform: translateY(-101%); visibility: hidden; }
+  }
+  @keyframes introWord {
+    0% { opacity: 0; letter-spacing: 0.44em; padding-left: 0.44em; }
+    46%, 100% { opacity: 1; letter-spacing: 0.02em; padding-left: 0.02em; }
+  }
+  @keyframes introRule {
+    0%, 10% { transform: scaleX(0); }
+    58%, 100% { transform: scaleX(1); }
+  }
+  .intro { animation: introPanel 2.5s cubic-bezier(0.19,1,0.22,1) forwards; }
+  .intro-word { animation: introWord 2.5s cubic-bezier(0.19,1,0.22,1) both; }
+  .intro-rule { animation: introRule 2.5s cubic-bezier(0.19,1,0.22,1) both; }
+  .nav-sep { width: 1px; height: 14px; background-color: #e5e7eb; }
+</style>
+</helmet>
+
+<sc-if value="{{ introScreen }}" hint-placeholder-val="{{ true }}">
+  <div class="intro" aria-hidden="true" style="position: fixed; inset: 0; z-index: 200; background-color: #f8f8f8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.75rem;">
+    <div class="intro-word" style="font-family: {{ wmFont }}; font-weight: {{ wmWeight }}; font-size: clamp(2.2rem, 7vw, 6rem); color: #111; line-height: 1; white-space: nowrap;">otamochi</div>
+    <div class="intro-rule" style="width: min(30vw, 260px); height: 1px; background-color: #b3592f; transform-origin: center;"></div>
+  </div>
+</sc-if>
+
+<nav data-screen-label="Nav" style="position: fixed; top: 0; left: 0; width: 100%; z-index: 100; display: flex; justify-content: flex-end; align-items: center; gap: 1.75rem; padding: 1.5rem 3rem; background-color: rgba(248,248,248,0.88); backdrop-filter: blur(10px);">
+  <div style="display: flex; align-items: center; gap: 2rem;">
+    <sc-for list="{{ navLinks }}" as="nav" hint-placeholder-count="4">
+      <a href="{{ nav.href }}" class="nlink" style="font-size: 0.7rem; font-weight: 500; letter-spacing: 0.24em; text-transform: uppercase; color: #6b7280;">{{ nav.label }}</a>
+    </sc-for>
+  </div>
+  <div class="nav-sep"></div>
+  <div style="display: flex; align-items: center; gap: 1.1rem;">
+    <a href="https://www.notion.com/ja/@otamochi" target="_blank" rel="noopener noreferrer" aria-label="Notion Templates" title="Templates" class="nicon" style="display: inline-flex; align-items: center; justify-content: center; color: #6b7280;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.139c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632z"></path></svg>
+    </a>
+    <a href="https://x.com/Otamochi84" target="_blank" rel="noopener noreferrer" aria-label="X" title="X" class="nicon" style="display: inline-flex; align-items: center; justify-content: center; color: #6b7280;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
+    </a>
+  </div>
+  <div class="nav-sep"></div>
+  <a href="https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #f7e7de; color: #b3592f; padding: 0.55em 1.4em; border-radius: 10px; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.02em; transition: background-color 0.3s ease;" style-hover="background-color: #f0dccf;">Contact</a>
+</nav>
+
+<header data-screen-label="Hero" style="position: relative; width: 100%; min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 8rem 3rem 6rem;">
+  <div style="position: absolute; left: 3rem; top: 50%; transform: translateY(-50%); z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 1.5rem;">
+    <span style="font-family: 'Quicksand', sans-serif; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.12em; color: #b3592f; writing-mode: vertical-rl;">Welcome!</span>
+    <div style="width: 1px; height: 4.5rem; background-color: #d8d3cf;"></div>
+  </div>
+  <div style="position: relative; z-index: 10; width: min(62vw, 880px, 86vh);">
+    <div class="kv-tone" style="position: relative; width: 100%; aspect-ratio: 16 / 9; background-color: #e5e7eb; overflow: hidden;">
+      <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="hero-kv" shape="rect" placeholder="キービジュアル（大淀・吉野の風景／山椒・梨などの植物）をドロップ" hint-size="100%,100%" style="position: absolute; inset: 0; width: 100%; height: 100%;"></x-import>
+    </div>
+  </div>
+</header>
+
+<section id="about" data-screen-label="About" style="background-color: #fff; position: relative; z-index: 20; padding: 8rem 96px;">
+  <div style="display: flex; align-items: center; gap: 2rem; margin-bottom: 4.5rem;">
+    <h2 style="font-size: 1.6rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: #111;">About</h2>
+    <div style="flex: 1; height: 1px; background-color: #e5e7eb;"></div>
+  </div>
+  <div style="display: grid; grid-template-columns: {{ aboutCols }}; gap: 3.5rem; align-items: stretch; min-height: 570px; width: {{ aboutWidth }}; max-width: 100%; margin: 0 auto;">
+    <div style="display: flex; flex-direction: column; height: 100%;">
+      <div style="display: flex; align-items: baseline; gap: 1.1em; margin-bottom: 3rem; flex-shrink: 0;">
+        <p style="font-size: 1.5rem; font-weight: 500; letter-spacing: 0.12em; color: #111; white-space: nowrap; flex-shrink: 0;">Ryota Ohashi</p>
+        <div style="flex: 1 1 0; min-width: 2rem; height: 1px; background-color: #e5e7eb;"></div>
+        <span aria-hidden="true" style="font-family: {{ wmFont }}; font-weight: {{ wmWeight }}; font-size: 0.95rem; letter-spacing: 0.06em; color: #9ca3af; user-select: none; white-space: nowrap; flex-shrink: 0;">otamochi</span>
+      </div>
+      <p style="font-family: 'Zen Old Mincho', serif; font-size: 0.8rem; line-height: 1.95; letter-spacing: 0.15em; color: #555; font-weight: 400;">1994年生まれ<br>奈良県吉野郡大淀町出身<br>大学では果樹の香りを研究し<br>化粧品メーカーで研究開発へ<br>その後　中小企業のアトツギ支援を経て<br>2024年に独立<br>2025年　結婚を機に奈良へUターン<br>現在は香芝市を拠点に活動</p>
+      <div style="flex: 1; min-height: 2.5rem;"></div>
+      <p style="font-family: 'EB Garamond', serif; font-size: 0.8rem; line-height: 1.95; letter-spacing: 0.06em; color: #6b7280; font-weight: 400;">Born in 1994<br>in Oyodo, Nara Prefecture.<br>Researched the aroma of fruit trees at university,<br>then joined a cosmetics manufacturer in R&amp;D.<br>Later supported successors of family-run businesses,<br>and became independent in 2024.<br>Returned to Nara in 2025 after marrying,<br>and now works from Kashiba.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; height: 100%;">
+      <sc-if value="{{ showAboutPhoto }}" hint-placeholder-val="{{ true }}">
+        <div style="flex: 1; min-height: 0; width: 100%; background-color: #e5e7eb; position: relative; overflow: hidden; margin-bottom: 1.5rem;">
+          <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="about-portrait" shape="rect" placeholder="スナップ写真（任意）" hint-size="100%,100%" style="position: absolute; inset: 0; width: 100%; height: 100%;"></x-import>
+        </div>
+      </sc-if>
+      <div style="flex-shrink: 0;">
+      <p style="font-family: 'Comfortaa', sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.24em; color: #b3592f;">Background</p>
+      <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.7rem;">
+        <sc-for list="{{ background }}" as="item" hint-placeholder-count="3">
+          <div style="display: grid; grid-template-columns: 2.4rem 1fr; gap: 0.7rem; align-items: baseline;">
+            <span style="font-size: 0.62rem; font-weight: 400; letter-spacing: 0.06em; color: #9ca3af; font-variant-numeric: tabular-nums;">{{ item.year }}</span>
+            <div>
+              <p style="font-family: 'Zen Old Mincho', serif; font-size: 0.65rem; line-height: 1.5; letter-spacing: 0.06em; color: #6b7280; font-weight: 400;">{{ item.jp }}</p>
+              <p style="font-family: 'EB Garamond', serif; font-size: 0.64rem; line-height: 1.5; letter-spacing: 0.03em; color: #9ca3af; font-weight: 400;">{{ item.en }}</p>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="journal" data-screen-label="Journal" style="background-color: #f8f8f8; position: relative; z-index: 20; padding: 8rem 96px;">
+  <div style="display: flex; align-items: center; gap: 2rem; margin-bottom: 4.5rem;">
+    <h2 style="font-size: 1.6rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: #111;">Journal</h2>
+    <div style="flex: 1; height: 1px; background-color: #e5e7eb;"></div>
+  </div>
+  <div style="max-width: 900px; margin: 0; display: flex; flex-direction: column;">
+    <sc-for list="{{ journal }}" as="entry" hint-placeholder-count="1">
+      <a href="#" class="jrow" style="display: grid; grid-template-columns: 130px 1fr auto; gap: 2rem; align-items: center; padding: 1.75rem 0; border-bottom: 1px solid #e5e7eb; color: #111;">
+        <span style="font-size: 0.7rem; font-weight: 500; letter-spacing: 0.16em; color: #6b7280; font-variant-numeric: tabular-nums;">{{ entry.date }}</span>
+        <span class="jrow-title" style="font-family: 'Noto Sans JP', sans-serif; font-size: 0.9rem; font-weight: 400; color: #111;">{{ entry.title }}</span>
+        <span class="jrow-arrow" style="font-size: 0.65rem; letter-spacing: 0.2em; color: #b3592f;">READ ↗</span>
+      </a>
+    </sc-for>
+    <div style="margin-top: 2.5rem;">
+      <a href="#" style="font-size: 0.7rem; font-weight: 500; letter-spacing: 0.28em; text-transform: uppercase; color: #111; border-bottom: 1px solid #111; padding-bottom: 0.35rem; transition: color 0.3s ease, border-color 0.3s ease;" style-hover="color: #b3592f; border-bottom-color: #b3592f;">View all</a>
+    </div>
+  </div>
+</section>
+
+<section id="works" data-screen-label="Works" style="background-color: #fff; position: relative; z-index: 20; padding: 8rem 96px;">
+  <div style="display: flex; align-items: center; gap: 2rem; margin-bottom: 4.5rem;">
+    <h2 style="font-size: 1.6rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: #111;">Works</h2>
+    <div style="flex: 1; height: 1px; background-color: #e5e7eb;"></div>
+  </div>
+  <div style="display: grid; grid-template-columns: {{ worksCols }}; gap: 2rem;">
+    <sc-for list="{{ works }}" as="work" hint-placeholder-count="3">
+      <div class="gallery-item" role="button" tabindex="0" aria-label="{{ work.label }}" onKeyDown="{{ onCardKey }}" style="position: relative; width: 100%; aspect-ratio: 1 / 1; overflow: hidden; background-color: #e5e7eb; cursor: pointer;">
+        <div class="gi-media" style="position: absolute; inset: 0;">
+          <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="{{ work.slotId }}" shape="rect" src="{{ work.src }}" placeholder="実績サムネイルをドロップ" hint-size="100%,100%" style="position: absolute; inset: 0; width: 100%; height: 100%;"></x-import>
+        </div>
+        <div class="gi-overlay" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); pointer-events: none;">
+          <span style="color: #fff; font-size: 0.75rem; letter-spacing: 0.3em; font-weight: 300; border: 1px solid rgba(255,255,255,0.5); padding: 0.5rem 1rem; background-color: rgba(0,0,0,0.2); backdrop-filter: blur(2px);">VIEW</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section id="service" data-screen-label="Service" style="background-color: #f8f8f8; position: relative; z-index: 20; padding: 8rem 96px 5rem;">
+  <div style="display: flex; align-items: center; gap: 2rem; margin-bottom: 4.5rem;">
+    <h2 style="font-size: 1.6rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: #111;">{{ serviceHeading }}</h2>
+    <div style="flex: 1; height: 1px; background-color: #e5e7eb;"></div>
+  </div>
+  <div style="width: min(74vw, 1120px); max-width: 100%; margin: 0 auto;">
+    <div style="max-width: 34rem;">
+      <p style="font-family: 'Zen Old Mincho', serif; font-size: 0.8rem; line-height: 1.95; letter-spacing: 0.15em; color: #555; font-weight: 400;">中小企業や個人の方を中心に、<br>「Notionを入れてみたけどうまく使えていない」<br>「これから導入を検討している」<br>という方のお手伝いをしています。</p>
+      <p style="font-family: 'Zen Old Mincho', serif; font-size: 0.8rem; line-height: 1.95; letter-spacing: 0.15em; color: #555; font-weight: 400; margin-top: 2rem;">Notionは、仕事で使ういろんな道具を<br>ひとつにまとめられるツールです。</p>
+      <p style="font-family: 'Zen Old Mincho', serif; font-size: 0.8rem; line-height: 1.95; letter-spacing: 0.15em; color: #555; font-weight: 400; margin-top: 2rem;">「情報がバラバラで探しにくい」<br>「Excelやスプレッドシートの管理が限界」<br>——Notionを使えばそんな悩みを解決できます。</p>
+      <p style="font-family: 'Zen Old Mincho', serif; font-size: 0.8rem; line-height: 1.95; letter-spacing: 0.15em; color: #555; font-weight: 400; margin-top: 2rem;">タスク管理、日報、顧客管理、社内wikiなど、<br>必要な情報をNotionでひとつにまとめ、<br>無理なく使い続けられる仕組みを設計・構築します。</p>
+      <p style="font-family: 'Zen Old Mincho', serif; font-size: 0.8rem; line-height: 1.95; letter-spacing: 0.15em; color: #111; font-weight: 400; margin-top: 2rem;">まずはお気軽にご相談ください。</p>
+      <p style="font-family: 'EB Garamond', serif; font-size: 0.8rem; line-height: 1.95; letter-spacing: 0.06em; color: #6b7280; font-weight: 400; margin-top: 3rem;">I specialize in designing<br>custom operational systems<br>for small and medium-sized businesses,<br>including database design,<br>automations, and integrations.</p>
+      <p style="font-family: 'EB Garamond', serif; font-size: 0.8rem; line-height: 1.95; letter-spacing: 0.06em; color: #6b7280; font-weight: 400; margin-top: 2rem;">My goal is to help teams work smarter<br>with tools that fit their unique workflows.</p>
+    </div>
+  </div>
+</section>
+
+
+
+<section id="contact" data-screen-label="Contact" style="background-color: #f8f8f8; color: #111; position: relative; z-index: 20; padding: 0 96px 2.5rem;">
+  <div style="font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.1em;">
+    <p>© 2026 otamochi</p>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;introScreen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Wordmark&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      introScreen: this.props.introScreen ?? true,
+      wmFont: "'Comfortaa', sans-serif",
+      wmWeight: 700,
+      showAboutPhoto: true,
+      aboutCols: 'minmax(300px, 1fr) minmax(0, 1.5fr)',
+      aboutWidth: 'min(78vw, 1150px)',
+      background: [
+        { year: '2013', jp: '奈良県立畝傍高等学校 卒業', en: 'Graduated from Unebi High School, Nara' },
+        { year: '2018', jp: '神戸大学農学部 卒業', en: 'B.Agr., Faculty of Agriculture, Kobe University' },
+        { year: '2020', jp: '神戸大学大学院農学研究科 修了', en: 'M.Agr., Graduate School of Agricultural Science, Kobe University' },
+      ],
+      serviceHeading: 'Service',
+      worksCols: 'repeat(3, 1fr)',
+      journal: [
+        { date: '2026.07.10', title: '奥大和コミュニティマネージャー育成プログラムに参加しました。' },
+      ],
+      works: [
+        { slotId: 'work-1', label: '実績を見る 1', src: 'public/notion-images/397df308-66d3-808b-b84c-d30eee49c0c4.png' },
+        { slotId: 'work-2', label: '実績を見る 2', src: 'public/notion-images/30ddf308-66d3-80e8-8f03-dfa9efc5ff57.png' },
+        { slotId: 'work-3', label: '実績を見る 3', src: '' },
+      ],
+      onCardKey: (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click(); }
+      },
+      navLinks: [
+        { label: 'About', href: '#about' },
+        { label: 'Journal', href: '#journal' },
+        { label: 'Works', href: '#works' },
+        { label: 'Service', href: '#service' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
