@@ -79,8 +79,18 @@ const pageUrl = new URL("/service/", Astro.site).href;
             </div>
             <div class="service-outer">
                 <div class="service-inner">
-                    {serviceJp.map((paragraph) => (
-                        <p class="body-jp service-p">
+                    {serviceEn.map((paragraph) => (
+                        <p class="body-en service-p">
+                            {paragraph.map((line, index) => (
+                                <>
+                                    {index > 0 && <br />}
+                                    {line}
+                                </>
+                            ))}
+                        </p>
+                    ))}
+                    {serviceJp.map((paragraph, pIndex) => (
+                        <p class={`body-jp service-p ${pIndex === 0 ? "service-p-jp-first" : ""}`}>
                             {paragraph.map((line, index) => (
                                 <>
                                     {index > 0 && <br />}
@@ -90,16 +100,6 @@ const pageUrl = new URL("/service/", Astro.site).href;
                         </p>
                     ))}
                     <p class="body-jp service-p service-p-closing">{serviceJpClosing}</p>
-                    {serviceEn.map((paragraph, pIndex) => (
-                        <p class={`body-en service-p ${pIndex === 0 ? "service-p-en-first" : ""}`}>
-                            {paragraph.map((line, index) => (
-                                <>
-                                    {index > 0 && <br />}
-                                    {line}
-                                </>
-                            ))}
-                        </p>
-                    ))}
                 </div>
             </div>
         </section>

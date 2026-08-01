@@ -27,11 +27,11 @@ const aboutProfile = {
     ]
 };
 
-// 学歴（Background）。英語だけで完結するよう機関名・学位を省略しない
+// 学歴（Background）。英語は名詞句で統一し、学位は国際的に通じる表記にする
 const backgroundItems = [
-    { year: "2013", jp: "奈良県立畝傍高等学校 卒業", en: "Graduated from Unebi High School, Nara" },
-    { year: "2018", jp: "神戸大学農学部 卒業", en: "B.Agr., Faculty of Agriculture, Kobe University" },
-    { year: "2020", jp: "神戸大学大学院農学研究科 修了", en: "M.Agr., Graduate School of Agricultural Science, Kobe University" }
+    { year: "2013", jp: "奈良県立畝傍高等学校 卒業", en: "Unebi High School, Nara" },
+    { year: "2018", jp: "神戸大学農学部 卒業", en: "BSc in Agriculture, Kobe University" },
+    { year: "2020", jp: "神戸大学大学院農学研究科 修了", en: "MSc in Agriculture, Kobe University" }
 ];
 
 // ナビゲーションのリンク（Serviceのみ別ページ）
@@ -187,18 +187,18 @@ const formatDate = (value) => {
                     <div class="about-name-rule"></div>
                     <span class="about-wordmark" aria-hidden="true">{aboutProfile.wordmark}</span>
                 </div>
-                <p class="body-jp">
-                    {aboutProfile.jp.map((line, index) => (
+                <p class="body-en">
+                    {aboutProfile.en.map((line, index) => (
                         <>
                             {index > 0 && <br />}
                             {line}
                         </>
                     ))}
                 </p>
-                <!-- 英文の下端を右カラムの下端に揃えるための伸縮スペーサー -->
+                <!-- 和文の下端を右カラムの下端に揃えるための伸縮スペーサー -->
                 <div class="about-spacer"></div>
-                <p class="body-en">
-                    {aboutProfile.en.map((line, index) => (
+                <p class="body-jp">
+                    {aboutProfile.jp.map((line, index) => (
                         <>
                             {index > 0 && <br />}
                             {line}
@@ -211,13 +211,14 @@ const formatDate = (value) => {
                 <div class="about-photo"></div>
                 <div class="about-background">
                     <p class="about-background-title">Background</p>
+                    <!-- 年号の左に置く菱形マークは .about-background-year の疑似要素で描く -->
                     <div class="about-background-list">
                         {backgroundItems.map((item) => (
-                            <div class="about-background-row">
+                            <div class="about-background-card">
                                 <span class="about-background-year">{item.year}</span>
-                                <div>
-                                    <p class="about-background-jp">{item.jp}</p>
+                                <div class="about-background-body">
                                     <p class="about-background-en">{item.en}</p>
+                                    <p class="about-background-jp">{item.jp}</p>
                                 </div>
                             </div>
                         ))}

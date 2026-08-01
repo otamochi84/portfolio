@@ -438,7 +438,7 @@
             font-size: 0.8rem;
             line-height: 1.95;
             letter-spacing: 0.06em;
-            color: #6b7280;
+            color: var(--text-sub);
             font-weight: 400;
         }
 
@@ -495,7 +495,7 @@
             flex-shrink: 0;
         }
 
-        /* 英文の下端を右カラムの下端に揃えるための伸縮スペーサー */
+        /* 和文の下端を右カラムの下端に揃えるための伸縮スペーサー */
         .about-spacer {
             flex: 1;
             min-height: 2.5rem;
@@ -518,8 +518,13 @@
             display: block;
         }
 
+        /* 写真の右下に置く。中身の幅ぶんだけ箱を作り、左の余りを自動マージンで潰して右端に付ける。
+           行内の文字は左揃えのまま（右揃えにすると菱形→年号→本文の位置が行ごとにずれるため） */
         .about-background {
             flex-shrink: 0;
+            width: fit-content;
+            max-width: 100%;
+            margin-left: auto;
         }
 
         .about-background-title {
@@ -530,16 +535,31 @@
             color: #b3592f;
         }
 
+        /* 経歴リスト。行間と菱形マークの寸法を変数で持ち、まとめて調整できるようにする */
         .about-background-list {
+            /* 行の間隔（時間の流れを感じさせるため本文より広めに取る） */
+            --mark-gap: 1.1rem;
+            /* 菱形の元になる正方形の一辺 */
+            --mark-size: 5px;
+            /* 45度回した菱形の見た目の幅・高さ（対角）。5px × √2 ≒ 7.1px */
+            --mark-diagonal: 7.1px;
+            /* 回転で四隅が箱からはみ出す量（片側）。約1.05px */
+            --mark-overhang: calc((var(--mark-diagonal) - var(--mark-size)) / 2);
+            /* 菱形の右端から年号までの間隔 */
+            --mark-text-gap: 0.65rem;
+
             display: flex;
             flex-direction: column;
-            gap: 0.4rem;
-            margin-top: 0.7rem;
+            gap: var(--mark-gap);
+            margin-top: 0.9rem;
         }
 
-        .about-background-row {
+        /* 年号と本文の並び。
+           1カラム目の幅は「菱形の対角＋菱形と年号の間隔＋年号4桁ぶん（2.4rem）」で確保する。
+           年号は3行とも4桁固定なので、この固定幅で本文の左端が縦に揃う */
+        .about-background-card {
             display: grid;
-            grid-template-columns: 2.4rem 1fr;
+            grid-template-columns: calc(var(--mark-diagonal) + var(--mark-text-gap) + 2.4rem) 1fr;
             gap: 0.7rem;
             align-items: baseline;
         }
@@ -552,6 +572,23 @@
             font-variant-numeric: tabular-nums;
         }
 
+        /* 菱形マーク。正方形を45度回して作る（SVGを持たずに済ませるため）。
+           年号と同じインラインの流れに置くことで、年号・本文とベースラインが構造的に揃う。
+           左右のmarginは回転ではみ出す角ぶん（--mark-overhang）を足し、
+           見た目の左端がカラムの左端（＝見出しの左端）にちょうど乗るようにしている */
+        .about-background-year::before {
+            content: '';
+            display: inline-block;
+            width: var(--mark-size);
+            height: var(--mark-size);
+            margin-left: var(--mark-overhang);
+            margin-right: calc(var(--mark-text-gap) + var(--mark-overhang));
+            background-color: #9ca3af;
+            /* 空のinline-blockは箱の下端がベースラインに乗るため、
+               数字の高さの中心に見えるよう1pxだけ持ち上げる */
+            transform: translateY(-1px) rotate(45deg);
+        }
+
         .about-background-jp {
             font-family: 'Zen Old Mincho', serif;
             font-size: 0.65rem;
@@ -561,12 +598,13 @@
             font-weight: 400;
         }
 
+        /* 色は和文（.about-background-jp）と揃える。書体と字間だけで和欧を描き分ける */
         .about-background-en {
             font-family: 'EB Garamond', serif;
             font-size: 0.64rem;
             line-height: 1.5;
             letter-spacing: 0.03em;
-            color: #9ca3af;
+            color: #6b7280;
             font-weight: 400;
         }
 
@@ -663,8 +701,8 @@
             color: var(--text-main);
         }
 
-        /* 英文は日本語群から離す */
-        .service-p-en-first {
+        /* 日本語群は英文から離す */
+        .service-p-jp-first {
             margin-top: 3rem;
         }
 
@@ -909,6 +947,41 @@
             padding: 0.5rem 1rem;
             background-color: rgba(0, 0, 0, 0.2);
             backdrop-filter: blur(2px);
+        }
+
+        /* --- Works（モバイル）: 横スクロール1行（スナップ付き） --- */
+        @media (max-width: 767px) {
+
+            /* .sec の左右パディングを打ち消して画面端まで流す。
+               カードが画面端で切れることが「まだ続く」という手がかりになるため、
+               パディング内に収める案より端まで見せる方を採った */
+            #gallery-grid {
+                display: flex;
+                gap: 0.75rem;
+                overflow-x: auto;
+                overflow-y: hidden;
+                scroll-snap-type: x mandatory;
+                margin-inline: calc(var(--spacing-container) * -1);
+                padding-inline: var(--spacing-container);
+                scroll-padding-inline-start: var(--spacing-container);
+                -webkit-overflow-scrolling: touch;
+                /* スクロールバーは隠す（Firefox / WebKit） */
+                scrollbar-width: none;
+            }
+
+            #gallery-grid::-webkit-scrollbar {
+                display: none;
+            }
+
+            /* 78vw（375pxで約292px）にして、次のカードが約47px覗くようにする。
+               入場アニメ（.is-visible待ち）は縦スクロール前提のため横スクロールでは切る。
+               切らないと画面外のカードが透明のまま残りうる */
+            .gallery-item {
+                flex: 0 0 78vw;
+                scroll-snap-align: start;
+                opacity: 1;
+                transform: none;
+            }
         }
 
         .journal-list {
