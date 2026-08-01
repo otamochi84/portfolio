@@ -266,6 +266,45 @@
             color: var(--text-main);
         }
 
+        /* メニュー開閉ボタン（モバイル専用。PCでは非表示） */
+        .site-nav-toggle {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            width: 40px;
+            height: 40px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6b7280;
+            /* 3本線（20px）は40px枠の内側に描かれるため、左右10pxぶん間隔が広く見える。
+               両側を詰めて、隣り合うアイコン・Contactとの見た目の間隔を揃える */
+            margin: 0 -0.5rem;
+        }
+
+        .site-nav-toggle-bar {
+            display: block;
+            width: 20px;
+            height: 1.5px;
+            background-color: currentColor;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        /* 展開中は3本線をバツ印に変える（中央の線を消し、上下を交差させる） */
+        .site-nav-toggle[aria-expanded="true"] .site-nav-toggle-bar:nth-child(1) {
+            transform: translateY(6.5px) rotate(45deg);
+        }
+
+        .site-nav-toggle[aria-expanded="true"] .site-nav-toggle-bar:nth-child(2) {
+            opacity: 0;
+        }
+
+        .site-nav-toggle[aria-expanded="true"] .site-nav-toggle-bar:nth-child(3) {
+            transform: translateY(-6.5px) rotate(-45deg);
+        }
+
         /* --- ヒーロー --- */
         .hero {
             position: relative;
@@ -630,18 +669,21 @@
         }
 
         /* --- Contact（コピーライトのみ） --- */
+        /* 直前のWorks（.sec-white）と同じ白にして、境目の色替わりを無くす */
         .site-footer {
             position: relative;
             z-index: 20;
-            background-color: var(--bg-body);
+            background-color: #fff;
             padding: 0 96px 2.5rem;
         }
 
+        /* 右端の余白は .site-footer の左右パディングが同値のため、右揃えで左端と揃う */
         .site-copyright {
             font-size: 10px;
             color: #6b7280;
             text-transform: uppercase;
             letter-spacing: 0.1em;
+            text-align: right;
         }
 
         /* --- レスポンシブ（デザイン指定はPC基準のため、以下は縮小時の指定） --- */
@@ -692,44 +734,75 @@
                 letter-spacing: 0.22em;
             }
 
-            /* 幅が足りないためアンカーリンクは畳み、アイコンとContactのみ残す */
+            /* 幅が足りないためリンクはハンバーガーメニューへ畳む。アイコンとContactは並べたまま残す */
             .site-nav {
                 padding: 1rem 1.25rem;
                 gap: 1rem;
             }
 
-            .site-nav-links,
+            .site-nav-toggle {
+                display: flex;
+            }
+
+            /* リンク群はナビ直下に降りるパネルへ変える（PC時のflex行から外す） */
+            .site-nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0;
+                padding: 0 1.25rem 0.5rem;
+                background-color: rgba(248, 248, 248, 0.88);
+                backdrop-filter: blur(10px);
+                border-top: 1px solid #e5e7eb;
+            }
+
+            .site-nav-links.is-open {
+                display: flex;
+            }
+
+            /* タップ領域を確保しつつ、行の区切りは細い罫線だけに留める。
+               パネルの左右パディングは .site-nav と同じ1.25remのため、右揃えでナビ右端と揃う */
+            .site-nav-links .site-nav-link {
+                padding: 0.95rem 0;
+                border-bottom: 1px solid #e5e7eb;
+                text-align: right;
+            }
+
+            .site-nav-links .site-nav-link:last-child {
+                border-bottom: none;
+            }
+
             .site-nav-links+.site-nav-sep {
                 display: none;
             }
 
-            /* Welcome!は画像の左に置けないため、画像の上へ横組みで配置する */
+            /* Welcome!はPCと同じく画像の左外に縦組みで置く。
+               左右のパディングは同値にし（PCと同じ構造）、Welcome!は左余白の中へ絶対配置で重ねる */
             .hero {
-                flex-direction: column;
-                justify-content: center;
-                gap: 2rem;
-                padding: 7rem 1.5rem 4rem;
+                padding: 7rem 4.25rem 4rem;
             }
 
             .hero-welcome {
-                position: static;
-                transform: none;
-                flex-direction: row;
-                align-items: center;
+                left: 1.25rem;
                 gap: 1rem;
             }
 
+            /* KV画像の高さが縮むため、縦組みと縦罫も同じ割合で詰める */
             .hero-welcome-text {
-                writing-mode: horizontal-tb;
+                font-size: 1rem;
             }
 
             .hero-welcome-rule {
-                width: 3rem;
-                height: 1px;
+                height: 2rem;
             }
 
+            /* 確保した左スペースの残り幅いっぱいに画像を置く */
             .hero-kv-wrap {
-                width: min(88vw, 640px);
+                width: min(100%, 640px);
             }
 
             .about-name-row {

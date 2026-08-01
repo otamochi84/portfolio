@@ -34,25 +34,12 @@ const backgroundItems = [
     { year: "2020", jp: "神戸大学大学院農学研究科 修了", en: "M.Agr., Graduate School of Agricultural Science, Kobe University" }
 ];
 
-// Serviceの本文。改行位置もデザイン確定値
-const serviceJp = [
-    ["中小企業や個人の方を中心に、", "「Notionを入れてみたけどうまく使えていない」", "「これから導入を検討している」", "という方のお手伝いをしています。"],
-    ["Notionは、仕事で使ういろんな道具を", "ひとつにまとめられるツールです。"],
-    ["「情報がバラバラで探しにくい」", "「Excelやスプレッドシートの管理が限界」", "——Notionを使えばそんな悩みを解決できます。"],
-    ["タスク管理、日報、顧客管理、社内wikiなど、", "必要な情報をNotionでひとつにまとめ、", "無理なく使い続けられる仕組みを設計・構築します。"]
-];
-const serviceJpClosing = "まずはお気軽にご相談ください。";
-const serviceEn = [
-    ["I specialize in designing", "custom operational systems", "for small and medium-sized businesses,", "including database design,", "automations, and integrations."],
-    ["My goal is to help teams work smarter", "with tools that fit their unique workflows."]
-];
-
-// ナビゲーションのアンカーリンク
+// ナビゲーションのリンク（Serviceのみ別ページ）
 const navLinks = [
     { label: "About", href: "#about" },
     { label: "Journal", href: "#journal" },
     { label: "Works", href: "#works" },
-    { label: "Service", href: "#service" }
+    { label: "Service", href: "/service" }
 ];
 
 const contactUrl = "https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105";
@@ -151,7 +138,7 @@ const formatDate = (value) => {
 
     <!-- 固定ナビゲーション -->
     <nav class="site-nav">
-        <div class="site-nav-links">
+        <div class="site-nav-links" id="site-nav-links">
             {navLinks.map((link) => (
                 <a href={link.href} class="site-nav-link">{link.label}</a>
             ))}
@@ -166,6 +153,12 @@ const formatDate = (value) => {
             </a>
         </div>
         <div class="site-nav-sep"></div>
+        <!-- メニュー開閉ボタン（モバイルのみ表示。PCではCSSで隠す）。右端はContactに残すため、その左に置く -->
+        <button type="button" class="site-nav-toggle" aria-label="メニュー" aria-expanded="false" aria-controls="site-nav-links">
+            <span class="site-nav-toggle-bar"></span>
+            <span class="site-nav-toggle-bar"></span>
+            <span class="site-nav-toggle-bar"></span>
+        </button>
         <a href={contactUrl} target="_blank" rel="noopener noreferrer" class="nav-contact-btn">Contact</a>
     </nav>
 
@@ -261,39 +254,6 @@ const formatDate = (value) => {
             <div class="sec-rule"></div>
         </div>
         <div id="gallery-grid"></div>
-    </section>
-
-    <!-- Service（Notionの説明） -->
-    <section id="service" class="sec sec-base sec-service">
-        <div class="sec-head">
-            <h2 class="sec-title">Service</h2>
-            <div class="sec-rule"></div>
-        </div>
-        <div class="service-outer">
-            <div class="service-inner">
-                {serviceJp.map((paragraph) => (
-                    <p class="body-jp service-p">
-                        {paragraph.map((line, index) => (
-                            <>
-                                {index > 0 && <br />}
-                                {line}
-                            </>
-                        ))}
-                    </p>
-                ))}
-                <p class="body-jp service-p service-p-closing">{serviceJpClosing}</p>
-                {serviceEn.map((paragraph, pIndex) => (
-                    <p class={`body-en service-p ${pIndex === 0 ? "service-p-en-first" : ""}`}>
-                        {paragraph.map((line, index) => (
-                            <>
-                                {index > 0 && <br />}
-                                {line}
-                            </>
-                        ))}
-                    </p>
-                ))}
-            </div>
-        </div>
     </section>
 
     <!-- Contact（コピーライトのみ） -->

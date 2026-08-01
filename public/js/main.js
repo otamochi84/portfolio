@@ -6,6 +6,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     setupIntro();
+    setupNavToggle();
     setupGallery();
     initScrollAnimations();
 });
@@ -26,6 +27,60 @@ function setupIntro() {
 
     // アニメーションが発火しない環境向けのフォールバック
     setTimeout(removeIntro, 4000);
+}
+
+// モバイル用ナビゲーション（ハンバーガーメニュー）の開閉
+// 開閉状態は aria-expanded を唯一の情報源とし、見た目はCSS側で追従させる
+function setupNavToggle() {
+    const nav = document.querySelector('.site-nav');
+    const toggle = document.querySelector('.site-nav-toggle');
+    const panel = document.getElementById('site-nav-links');
+    if (!nav || !toggle || !panel) return;
+
+    const isOpen = () => toggle.getAttribute('aria-expanded') === 'true';
+
+    const openNav = () => {
+        panel.classList.add('is-open');
+        toggle.setAttribute('aria-expanded', 'true');
+    };
+
+    const closeNav = () => {
+        panel.classList.remove('is-open');
+        toggle.setAttribute('aria-expanded', 'false');
+    };
+
+    toggle.addEventListener('click', () => {
+        if (isOpen()) {
+            closeNav();
+        } else {
+            openNav();
+        }
+    });
+
+    // リンクをタップしたら閉じる（アンカー移動先がメニューで隠れないようにする）
+    panel.querySelectorAll('.site-nav-link').forEach((link) => {
+        link.addEventListener('click', closeNav);
+    });
+
+    // メニュー外をタップしたら閉じる（ナビ内のタップは対象外）
+    // iOS Safariはdocumentへ委譲したclickが拾えない場合があるためpointerdownで受ける
+    document.addEventListener('pointerdown', (e) => {
+        if (!isOpen()) return;
+        if (nav.contains(e.target)) return;
+        closeNav();
+    });
+
+    // Escapeキーで閉じ、フォーカスを開閉ボタンへ戻す
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape' || !isOpen()) return;
+        closeNav();
+        toggle.focus();
+    });
+
+    // PC幅へ戻したときに開いた状態が残らないようリセットする
+    window.matchMedia('(min-width: 768px)').addEventListener('change', (e) => {
+        if (e.matches) closeNav();
+    });
 }
 
 // ギャラリー画像の生成（ローダー連動を廃止）
