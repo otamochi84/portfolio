@@ -5,10 +5,28 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    setupIntro();
     setupGallery();
-    // ローダーを廃止したため、DOM準備直後にヒーロー登場アニメを開始する
-    startOpeningAnimation();
+    initScrollAnimations();
 });
+
+// イントロ（ロード画面）の後始末
+// 表示・アニメーションはCSS側で完結するが、アニメーションが走らない環境で
+// パネルが residual に残り操作を妨げないよう、DOMから取り除いておく
+function setupIntro() {
+    const intro = document.querySelector('.intro');
+    if (!intro) return;
+
+    const removeIntro = () => intro.remove();
+
+    // パネル本体のアニメーション終了で除去（子要素のイベントは無視する）
+    intro.addEventListener('animationend', (e) => {
+        if (e.target === intro) removeIntro();
+    });
+
+    // アニメーションが発火しない環境向けのフォールバック
+    setTimeout(removeIntro, 4000);
+}
 
 // ギャラリー画像の生成（ローダー連動を廃止）
 function setupGallery() {
@@ -64,108 +82,8 @@ function createGalleryItem(index, workData, container) {
     });
 }
 
-// オープニングアニメーション（ヒーロー強化版・ローダーなし）
-function startOpeningAnimation() {
-    const isMobile = window.innerWidth <= 768;
-    const bgOpacity = isMobile ? 0.08 : 0.15;
-
-    // 動きを減らす設定のユーザーには開場アニメーションをスキップし、最終状態で即表示する
-    // （CSSで初期状態がopacity:0等になっている要素があるため、放置すると見えないままになる）
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        showHeroInstantly(bgOpacity);
-        // スクロールアニメの初期化は行うが、パララックスのscrollリスナーは登録しない
-        initScrollAnimations(true);
-        return;
-    }
-
-    const tl = anime.timeline({ easing: 'easeOutExpo' });
-
-    tl
-        // 背景の巨大文字「ota / mochi」をドリフトインさせる
-        .add({
-            targets: '.parallax-bg',
-            opacity: [0, bgOpacity * 1.4],
-            translateX: [80, 0],
-            scale: [1.1, 1],
-            duration: 1800,
-        })
-        .add({
-            targets: '.brand-welcome',
-            translateY: [40, 0],
-            opacity: [0, 1],
-            duration: 1100,
-            easing: 'easeOutQuart'
-        }, '-=1400')
-        .add({
-            targets: '.reveal-text span',
-            translateY: ['100%', '0%'],
-            opacity: [0, 1],
-            duration: 1000,
-            delay: anime.stagger(70),
-        }, '-=800')
-        .add({
-            targets: '.user-subtitle',
-            translateY: [20, 0],
-            opacity: [0, 1],
-            duration: 800,
-            easing: 'easeOutQuad'
-        }, '-=600')
-        .add({
-            targets: '.line-anim',
-            scaleX: [0, 1], duration: 800,
-        }, '-=700')
-        .add({
-            targets: ['.copy-line', '.copy-line-accent'],
-            translateY: [30, 0],
-            opacity: [0, 1],
-            duration: 900,
-            delay: anime.stagger(140),
-            easing: 'easeOutQuad'
-        }, '-=600')
-        .finished.then(() => {
-            initScrollAnimations();
-        });
-}
-
-// 動きを減らす設定のユーザー向け：ヒーロー各要素を最終状態で即表示する
-function showHeroInstantly(bgOpacity) {
-    // 各要素のCSS初期値（opacity:0 / transform）を最終状態へ直接上書きする
-    const setFinal = (selector, opacity) => {
-        document.querySelectorAll(selector).forEach(el => {
-            el.style.opacity = opacity;
-            el.style.transform = 'none';
-        });
-    };
-
-    // 背景の巨大文字：最終opacityはモバイル0.08/PC0.15
-    setFinal('.parallax-bg', bgOpacity);
-    setFinal('.brand-welcome', 1);
-    setFinal('.reveal-text span', 1);
-    setFinal('.user-subtitle', 1);
-    setFinal('.copy-line', 1);
-    setFinal('.copy-line-accent', 1);
-    // 区切り線：scaleX(0) → scaleX(1) で表示
-    document.querySelectorAll('.line-anim').forEach(el => {
-        el.style.transform = 'scaleX(1)';
-    });
-}
-
-// スクロール連動アニメーション
-// skipParallax=true のときはパララックスのscrollリスナーを登録しない（reduced-motion対応）
-function initScrollAnimations(skipParallax) {
-    if (!skipParallax) {
-        const parallaxBg = document.querySelector('.parallax-bg');
-        window.addEventListener('scroll', () => {
-            const scrolled = window.scrollY;
-            const speed = 0.2;
-            window.requestAnimationFrame(() => {
-                if (parallaxBg) {
-                    parallaxBg.style.transform = `translateY(${scrolled * speed}px)`;
-                }
-            });
-        });
-    }
-
+// スクロール連動アニメーション（ギャラリーカードの出現）
+function initScrollAnimations() {
     const observerOptions = { root: null, rootMargin: '0px', threshold: 0.1 };
     const observer = new IntersectionObserver((entries, obs) => {
         entries.forEach((entry, index) => {

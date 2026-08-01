@@ -41,6 +41,8 @@
             overflow-x: hidden;
             width: 100%;
             overscroll-behavior-y: none;
+            /* 行末の孤立語を避ける（対応ブラウザのみ） */
+            text-wrap: pretty;
         }
 
         a {
@@ -120,328 +122,626 @@
             background-color: #f0dccf;
         }
 
-        /* --- ヘッダー --- */
-        .header-section {
-            /* 基本は画面いっぱいだが、スマホなどコンテンツが縦に伸びる場合は自動で伸ばす */
-            min-height: 100vh;
-            min-height: 100svh;
-            /* コンテンツが溢れる場合は高さを自動拡張 */
-            height: auto;
+        /* ==========================================================================
+           トップページ v2（Intro / Nav / Hero / About / Journal / Works / Service / Contact）
+           ========================================================================== */
 
+        /* 固定ナビの高さぶんアンカー位置をずらす */
+        section[id] {
+            scroll-margin-top: 92px;
+        }
+
+        /* --- イントロ（ロード画面） --- */
+        .intro {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background-color: var(--bg-body);
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
-            padding-top: 8rem;
-            padding-bottom: 4rem;
-            position: relative;
-            width: 100%;
-            overflow: hidden;
-
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
+            align-items: center;
+            justify-content: center;
+            gap: 1.75rem;
+            animation: introPanel 2.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
         }
 
-        @media (min-width: 768px) {
-            .header-section {
-                padding-top: 10rem;
-                padding-left: 3rem;
-                padding-right: 3rem;
-            }
-        }
-
-        /* 背景の巨大文字 (otamochi) */
-        .parallax-bg {
-            position: absolute;
-            right: 2%;
-            top: 10%;
-            font-weight: bold;
-            color: #e5e7eb;
-            user-select: none;
-            /* 初期状態を非表示にする（アニメーションで表示させるため） */
-            opacity: 0;
-            mix-blend-mode: multiply;
-            pointer-events: none;
-            z-index: 0;
+        .intro-word {
+            font-family: 'Comfortaa', sans-serif;
+            font-weight: 700;
+            font-size: clamp(2.2rem, 7vw, 6rem);
+            color: var(--text-main);
+            line-height: 1;
             white-space: nowrap;
-            line-height: 0.8;
-            font-size: 15vw;
-            transform: translateY(0);
-            will-change: transform;
+            animation: introWord 2.5s cubic-bezier(0.19, 1, 0.22, 1) both;
         }
 
-        @media (max-width: 768px) {
-            .parallax-bg {
-                font-size: 18vw;
-                /* スマホ時の最終透明度はJSアニメーションで制御しますが、CSSの初期値は0でOK */
-                top: 11%;
-                right: 5%;
+        .intro-rule {
+            width: min(30vw, 260px);
+            height: 1px;
+            background-color: #b3592f;
+            transform-origin: center;
+            animation: introRule 2.5s cubic-bezier(0.19, 1, 0.22, 1) both;
+        }
+
+        /* パネルは68%まで静止してから上へ抜ける */
+        @keyframes introPanel {
+            0%, 68% {
+                transform: translateY(0);
+                visibility: visible;
+            }
+
+            99.9% {
+                transform: translateY(-101%);
+                visibility: visible;
+            }
+
+            100% {
+                transform: translateY(-101%);
+                visibility: hidden;
             }
         }
 
-        .header-content {
-            position: relative;
-            z-index: 10;
-            width: 100%;
-            max-width: none;
-            margin: 0;
+        /* letter-spacingと同時にpadding-leftも動かして中心を保つ */
+        @keyframes introWord {
+            0% {
+                opacity: 0;
+                letter-spacing: 0.44em;
+                padding-left: 0.44em;
+            }
+
+            46%, 100% {
+                opacity: 1;
+                letter-spacing: 0.02em;
+                padding-left: 0.02em;
+            }
         }
 
-        /* Welcome! 大見出し */
-        .brand-welcome {
+        @keyframes introRule {
+            0%, 10% {
+                transform: scaleX(0);
+            }
+
+            58%, 100% {
+                transform: scaleX(1);
+            }
+        }
+
+        /* --- 固定ナビゲーション（トップページ用） --- */
+        .site-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 1.75rem;
+            padding: 1.5rem 3rem;
+            /* 本文と重なるため半透明＋blurは必須 */
+            background-color: rgba(248, 248, 248, 0.88);
+            backdrop-filter: blur(10px);
+        }
+
+        .site-nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .site-nav-link {
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: #6b7280;
+            transition: color 0.3s ease;
+        }
+
+        .site-nav-link:hover {
+            color: var(--text-main);
+        }
+
+        .site-nav-sep {
+            width: 1px;
+            height: 14px;
+            background-color: #e5e7eb;
+        }
+
+        .site-nav-icons {
+            display: flex;
+            align-items: center;
+            gap: 1.1rem;
+        }
+
+        .site-nav-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            transition: color 0.3s ease;
+        }
+
+        .site-nav-icon:hover {
+            color: var(--text-main);
+        }
+
+        /* --- ヒーロー --- */
+        .hero {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 8rem 3rem 6rem;
+        }
+
+        .hero-welcome {
+            position: absolute;
+            left: 3rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .hero-welcome-text {
             font-family: 'Quicksand', sans-serif;
             font-size: 1.25rem;
             font-weight: 700;
-            letter-spacing: -0.02em;
-            color: #111;
-            line-height: 1.1;
-            margin-bottom: 6rem;
-            /* アニメーション用 */
-            opacity: 0;
-            transform: translateY(20px);
-            margin-left: 0;
+            letter-spacing: 0.12em;
+            color: #b3592f;
+            writing-mode: vertical-rl;
         }
 
-        @media (min-width: 768px) {
-            .brand-welcome {
-                font-size: 2rem;
-                margin-bottom: 3rem;
-                margin-left: 6rem;
-            }
+        .hero-welcome-rule {
+            width: 1px;
+            height: 4.5rem;
+            background-color: #d8d3cf;
         }
 
-        @media (min-width: 1024px) {
-            .brand-welcome {
-                font-size: 2.2rem;
-            }
-        }
-
-        /* --- 名前・肩書エリア（左寄せ） --- */
-        .header-profile-area {
-            margin-left: 0;
-            margin-right: auto;
-            width: fit-content;
-            max-width: 800px;
-            display: flex;
-            flex-direction: column;
+        .hero-kv-wrap {
             position: relative;
-            align-items: flex-start;
-            text-align: left;
+            z-index: 10;
+            width: min(62vw, 880px, 86vh);
         }
 
-        @media (min-width: 768px) {
-            .header-profile-area {
-                margin-left: 6rem;
-            }
-        }
-
-        /* 名前 */
-        .user-name {
-            font-size: 2.2rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            margin-bottom: 0.5rem;
-            mix-blend-mode: darken;
-            word-break: normal;
-            line-height: 1.1;
-            text-align: left;
+        .hero-kv {
             width: 100%;
-            white-space: nowrap;
-        }
-
-        @media (min-width: 768px) {
-            .user-name {
-                font-size: 4.5rem;
-            }
-        }
-
-        /* 肩書 */
-        .user-subtitle {
-            font-size: 0.9rem;
-            line-height: 1.8;
-            font-weight: 400;
-            color: #6b7280;
-            letter-spacing: 0.025em;
-            margin-bottom: 2rem;
-            text-align: left;
-            width: 100%;
-            /* アニメーション用 */
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        @media (min-width: 768px) {
-            .user-subtitle {
-                font-size: 1.1rem;
-                white-space: nowrap;
-            }
-        }
-
-        /* 名前下の黒い区切り線 */
-        .separator-line {
-            width: 4rem;
-            height: 2px;
-            background-color: #000;
-            margin-bottom: 2rem;
-            align-self: flex-start;
-            transform-origin: left;
-            transform: scaleX(0);
-        }
-
-        @media (min-width: 768px) {
-            .separator-line {
-                width: 6rem;
-            }
-        }
-
-        /* --- コピーテキストブロック（中央寄せ） --- */
-        .header-copy {
-            display: flex;
-            flex-direction: column;
-            /* 少し下に配置するためマージンを増やす */
-            margin-top: 5rem;
-            margin-left: auto;
-            margin-right: auto;
-            width: fit-content;
-            /* テキスト自体は左揃え */
-            align-items: flex-start;
-            text-align: left;
-        }
-
-        /* 3行コピー */
-        .copy-line {
-            font-size: 1.4rem;
-            font-weight: 400;
-            line-height: 1.6;
-            letter-spacing: 0.02em;
-            color: #333;
-            text-align: left;
-            white-space: nowrap;
-            /* アニメーション用 */
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        @media (min-width: 768px) {
-            .copy-line {
-                font-size: 2.4rem;
-            }
-        }
-
-        /* コピー文の署名 (-- with Notion.) */
-        .copy-line-accent {
-            font-size: 1.6rem;
-            font-weight: 400;
-            line-height: 1.6;
-            letter-spacing: 0.03em;
-            color: #111;
-            margin-top: 1rem;
-            /* 右端に配置 */
-            align-self: flex-end;
-            text-align: right;
-            border-bottom: 2px solid #111;
-            padding-bottom: 2px;
-            white-space: nowrap;
-            /* アニメーション用 */
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        @media (min-width: 768px) {
-            .copy-line-accent {
-                font-size: 2.7rem;
-                border-bottom-width: 2px;
-            }
-        }
-
-        /* 特定単語の強調 (Notion) */
-        .accent-highlight {
-            font-weight: 800;
-        }
-
-        /* 文字出現アニメーション用のラッパー */
-        .reveal-text {
+            aspect-ratio: 16 / 9;
+            background-color: #e5e7eb;
             overflow: hidden;
-            display: inline-block;
-            vertical-align: bottom;
-            padding-right: 0.15em;
-            margin-right: -0.15em;
-            padding-bottom: 0.05em;
         }
 
-        .reveal-text span {
+        /* 写真はどれを入れてもサイトの世界観に揃うようくすませる */
+        .kv-tone {
+            position: relative;
+        }
+
+        .kv-tone img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
             display: block;
-            transform: translateY(100%);
-            opacity: 0;
+            filter: saturate(0.78) contrast(0.94) sepia(0.1) brightness(1.02);
         }
 
-        /* スマホ用改行制御クラス */
-        .br-mobile {
-            display: block;
+        .kv-tone::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: #b3592f;
+            opacity: 0.07;
+            mix-blend-mode: multiply;
+            pointer-events: none;
+            z-index: 2;
         }
 
-        @media (min-width: 768px) {
-            .br-mobile {
-                display: none;
-            }
-        }
-
-        /* --- ギャラリー --- */
-        .container-padding {
-            padding-left: var(--spacing-container);
-            padding-right: var(--spacing-container);
-        }
-
-        @media (min-width: 768px) {
-            .container-padding {
-                padding-left: var(--spacing-container-md);
-                padding-right: var(--spacing-container-md);
-            }
-        }
-
-        .section-py {
-            padding-top: 8rem;
-            padding-bottom: 8rem;
-        }
-
-        .gallery-section {
-            background-color: #f8f8f8;
+        /* --- セクション共通 --- */
+        .sec {
             position: relative;
             z-index: 20;
+            padding: 8rem 96px;
         }
 
-        .section-header {
+        .sec-white {
+            background-color: #fff;
+        }
+
+        .sec-base {
+            background-color: var(--bg-body);
+        }
+
+        .sec-service {
+            padding-bottom: 5rem;
+        }
+
+        .sec-head {
             display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            margin-bottom: 6rem;
-            border-bottom: 1px solid #f3f4f6;
-            padding-bottom: 1.5rem;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 4.5rem;
         }
 
-        .section-title {
-            font-size: 1.875rem;
+        .sec-title {
+            font-size: 1.6rem;
+            font-weight: 500;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--text-main);
+        }
+
+        .sec-rule {
+            flex: 1;
+            height: 1px;
+            background-color: #e5e7eb;
+        }
+
+        /* --- 本文（和文・欧文） --- */
+        .body-jp {
+            font-family: 'Zen Old Mincho', serif;
+            font-size: 0.8rem;
+            line-height: 1.95;
+            letter-spacing: 0.15em;
+            color: var(--text-sub);
+            font-weight: 400;
+        }
+
+        /* 欧文に0.15emを当てると行長が伸びて手置き改行が崩れるため0.06em固定 */
+        .body-en {
+            font-family: 'EB Garamond', serif;
+            font-size: 0.8rem;
+            line-height: 1.95;
+            letter-spacing: 0.06em;
+            color: #6b7280;
+            font-weight: 400;
+        }
+
+        /* --- About --- */
+        .about-grid {
+            display: grid;
+            grid-template-columns: minmax(300px, 1fr) minmax(0, 1.5fr);
+            gap: 3.5rem;
+            align-items: stretch;
+            min-height: 570px;
+            width: min(78vw, 1150px);
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .about-col {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .about-name-row {
+            display: flex;
+            align-items: baseline;
+            gap: 1.1em;
+            margin-bottom: 3rem;
+            flex-shrink: 0;
+        }
+
+        .about-name {
+            font-size: 1.5rem;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            color: var(--text-main);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .about-name-rule {
+            flex: 1 1 0;
+            min-width: 2rem;
+            height: 1px;
+            background-color: #e5e7eb;
+        }
+
+        .about-wordmark {
+            font-family: 'Comfortaa', sans-serif;
             font-weight: 700;
-            letter-spacing: -0.025em;
+            font-size: 0.95rem;
+            letter-spacing: 0.06em;
+            color: #9ca3af;
+            user-select: none;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
-        @media (min-width: 768px) {
-            .section-title {
-                font-size: 3rem;
+        /* 英文の下端を右カラムの下端に揃えるための伸縮スペーサー */
+        .about-spacer {
+            flex: 1;
+            min-height: 2.5rem;
+        }
+
+        /* 比率を固定すると左右の下端が揃わなくなるためflexで高さを吸収させる */
+        .about-photo {
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+            background-color: #e5e7eb;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .about-background {
+            flex-shrink: 0;
+        }
+
+        .about-background-title {
+            font-family: 'Comfortaa', sans-serif;
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            color: #b3592f;
+        }
+
+        .about-background-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            margin-top: 0.7rem;
+        }
+
+        .about-background-row {
+            display: grid;
+            grid-template-columns: 2.4rem 1fr;
+            gap: 0.7rem;
+            align-items: baseline;
+        }
+
+        .about-background-year {
+            font-size: 0.62rem;
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            color: #9ca3af;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .about-background-jp {
+            font-family: 'Zen Old Mincho', serif;
+            font-size: 0.65rem;
+            line-height: 1.5;
+            letter-spacing: 0.06em;
+            color: #6b7280;
+            font-weight: 400;
+        }
+
+        .about-background-en {
+            font-family: 'EB Garamond', serif;
+            font-size: 0.64rem;
+            line-height: 1.5;
+            letter-spacing: 0.03em;
+            color: #9ca3af;
+            font-weight: 400;
+        }
+
+        /* --- Journal（トップページの一覧） --- */
+        .jrow-list {
+            max-width: 900px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .jrow {
+            display: grid;
+            grid-template-columns: 130px 1fr auto;
+            gap: 2rem;
+            align-items: center;
+            padding: 1.75rem 0;
+            border-bottom: 1px solid #e5e7eb;
+            color: var(--text-main);
+        }
+
+        .jrow-date {
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.16em;
+            color: #6b7280;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .jrow-title {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: var(--text-main);
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .jrow:hover .jrow-title {
+            transform: translateX(10px);
+        }
+
+        .jrow-arrow {
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            color: #b3592f;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .jrow:hover .jrow-arrow {
+            opacity: 1;
+        }
+
+        .jrow-viewall {
+            margin-top: 2.5rem;
+        }
+
+        .viewall-link {
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--text-main);
+            padding-bottom: 0.35rem;
+            transition: color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .viewall-link:hover {
+            color: #b3592f;
+            border-bottom-color: #b3592f;
+        }
+
+        /* --- Service --- */
+        .service-outer {
+            width: min(74vw, 1120px);
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .service-inner {
+            max-width: 34rem;
+        }
+
+        .service-p {
+            margin-top: 2rem;
+        }
+
+        .service-p:first-child {
+            margin-top: 0;
+        }
+
+        .service-p-closing {
+            color: var(--text-main);
+        }
+
+        /* 英文は日本語群から離す */
+        .service-p-en-first {
+            margin-top: 3rem;
+        }
+
+        /* --- Contact（コピーライトのみ） --- */
+        .site-footer {
+            position: relative;
+            z-index: 20;
+            background-color: var(--bg-body);
+            padding: 0 96px 2.5rem;
+        }
+
+        .site-copyright {
+            font-size: 10px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* --- レスポンシブ（デザイン指定はPC基準のため、以下は縮小時の指定） --- */
+        @media (max-width: 1024px) {
+            .sec {
+                padding: 6rem 48px;
+            }
+
+            .site-footer {
+                padding: 0 48px 2.5rem;
+            }
+
+            /* 1カラムに落とすため写真は比率固定に切り替える */
+            .about-grid {
+                grid-template-columns: 1fr;
+                min-height: 0;
+                width: 100%;
+                gap: 2.5rem;
+            }
+
+            .about-photo {
+                flex: none;
+                aspect-ratio: 4 / 3;
+            }
+
+            .about-spacer {
+                flex: none;
+                min-height: 2rem;
             }
         }
 
-        .section-number {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: #9ca3af;
-            margin-bottom: 0.25rem;
-        }
+        @media (max-width: 767px) {
+            .sec {
+                padding: 5rem 24px;
+            }
 
-        @media (min-width: 768px) {
-            .section-number {
-                font-size: 0.75rem;
+            .site-footer {
+                padding: 0 24px 2rem;
+            }
+
+            .sec-head {
+                gap: 1.25rem;
+                margin-bottom: 2.5rem;
+            }
+
+            .sec-title {
+                font-size: 1.15rem;
+                letter-spacing: 0.22em;
+            }
+
+            /* 幅が足りないためアンカーリンクは畳み、アイコンとContactのみ残す */
+            .site-nav {
+                padding: 1rem 1.25rem;
+                gap: 1rem;
+            }
+
+            .site-nav-links,
+            .site-nav-links+.site-nav-sep {
+                display: none;
+            }
+
+            /* Welcome!は画像の左に置けないため、画像の上へ横組みで配置する */
+            .hero {
+                flex-direction: column;
+                justify-content: center;
+                gap: 2rem;
+                padding: 7rem 1.5rem 4rem;
+            }
+
+            .hero-welcome {
+                position: static;
+                transform: none;
+                flex-direction: row;
+                align-items: center;
+                gap: 1rem;
+            }
+
+            .hero-welcome-text {
+                writing-mode: horizontal-tb;
+            }
+
+            .hero-welcome-rule {
+                width: 3rem;
+                height: 1px;
+            }
+
+            .hero-kv-wrap {
+                width: min(88vw, 640px);
+            }
+
+            .about-name-row {
+                margin-bottom: 2rem;
+            }
+
+            /* 日付を上段に回して2段組にする */
+            .jrow {
+                grid-template-columns: 1fr auto;
+                gap: 0.5rem 1rem;
+                padding: 1.25rem 0;
+            }
+
+            .jrow-date {
+                grid-column: 1 / -1;
+            }
+
+            .service-outer {
+                width: 100%;
             }
         }
 
@@ -531,52 +831,6 @@
             backdrop-filter: blur(2px);
         }
 
-        /* --- フリーテキストセクション --- */
-        .text-section {
-            background-color: #fff;
-            position: relative;
-            z-index: 20;
-        }
-
-        .text-content-wrapper {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .text-body {
-            font-size: 0.95rem;
-            line-height: 2.2;
-            color: var(--text-sub);
-            white-space: pre-line;
-            font-weight: 400;
-        }
-
-        @media (min-width: 768px) {
-            .text-body {
-                font-size: 1.05rem;
-            }
-        }
-
-        /* テキスト間の区切り線 */
-        .text-separator {
-            width: 100%;
-            height: 1px;
-            background-color: #e5e7eb;
-            margin: 3rem 0;
-        }
-
-        #free-text-body-jp {
-            /* Quicksandには日本語が含まれないため、英字のみQuicksandになり、日本語はNoto Sans JPが適用されます */
-            font-family: 'Quicksand', 'Noto Sans JP', sans-serif;
-        }
-
-        /* --- Journalセクション --- */
-        .journal-section {
-            background-color: #fff;
-            position: relative;
-            z-index: 20;
-        }
-
         .journal-list {
             max-width: 800px;
             margin: 0 auto;
@@ -634,161 +888,6 @@
         @media (max-width: 767px) {
             .journal-title {
                 font-size: 0.9rem;
-            }
-        }
-
-        .view-all-link {
-            text-align: center;
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        .view-all-link a {
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: var(--text-main);
-            border-bottom: 1px solid transparent;
-            transition: border-color 0.3s ease;
-        }
-
-        .view-all-link a:hover {
-            border-bottom-color: var(--text-main);
-        }
-
-        /* --- Contact / Footer --- */
-        .contact-section {
-            background-color: #f8f8f8;
-            color: var(--text-main);
-            position: relative;
-            padding-bottom: 3rem;
-        }
-
-        /* Contactの見出しはWelcome!と同じフォントにし、罫線なし・サブテキストとの間隔を詰める */
-        .contact-section .section-title {
-            font-family: 'Quicksand', sans-serif;
-        }
-
-        .contact-section .section-header {
-            border-bottom: none;
-            padding-bottom: 0;
-            margin-bottom: 0.75rem;
-        }
-
-        .contact-inner {
-            max-width: 1280px;
-            margin: 0 auto;
-        }
-
-        .contact-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 5rem;
-        }
-
-        @media (min-width: 768px) {
-            .contact-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        .contact-label {
-            display: block;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: #6b7280;
-            margin-bottom: 2rem;
-        }
-
-        .contact-subtext {
-            font-family: 'Quicksand', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: var(--text-sub);
-            margin-top: 0;
-            margin-bottom: 4rem;
-            line-height: 1.6;
-        }
-
-        @media (min-width: 768px) {
-            .contact-subtext {
-                font-size: 1.1rem;
-                margin-top: 0;
-                margin-bottom: 5rem;
-            }
-        }
-
-        .links-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .link-item {
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 1rem;
-            position: relative;
-        }
-
-        .link-anchor {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.25rem;
-            font-weight: 300;
-            transition: all 0.3s ease;
-            width: 100%;
-        }
-
-        @media (min-width: 768px) {
-            .link-anchor {
-                font-size: 1.5rem;
-            }
-        }
-
-        .link-anchor:hover {
-            padding-left: 1rem;
-        }
-
-        .link-label {
-            transition: color 0.3s;
-        }
-
-        .link-anchor:hover .link-label {
-            color: #6b7280;
-        }
-
-        .link-arrow {
-            font-size: 0.75rem;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .link-anchor:hover .link-arrow {
-            opacity: 1;
-        }
-
-        .footer-bottom {
-            margin-top: 8rem;
-            padding-top: 2rem;
-            border-top: 1px solid #e5e7eb;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: flex-start;
-            font-size: 10px;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            gap: 1rem;
-        }
-
-        @media (min-width: 768px) {
-            .footer-bottom {
-                flex-direction: row;
-                align-items: flex-end;
             }
         }
 
