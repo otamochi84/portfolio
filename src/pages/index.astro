@@ -1,5 +1,5 @@
 ---
-import { getWorks, getJournalEntries, getSiteContents, pickSiteContent } from "../lib/notion";
+import { getWorks, getJournalEntries, getSiteContents, pickSiteContent, getBackgroundItems } from "../lib/notion";
 
 // プロフィール（About）。Notion側の本文が空のときに使うフォールバック
 // 改行位置はデザイン確定値のため <br> で固定する
@@ -28,8 +28,9 @@ const aboutProfile = {
     ]
 };
 
-// 学歴（Background）。英語は名詞句で統一し、学位は国際的に通じる表記にする
-const backgroundItems = [
+// 学歴（Background）。Notion側が空のときに使うフォールバック
+// 英語は名詞句で統一し、学位は国際的に通じる表記にする
+const backgroundFallback = [
     { year: "2013", jp: "奈良県立畝傍高等学校 卒業", en: "Unebi High School, Nara" },
     { year: "2018", jp: "神戸大学農学部 卒業", en: "BSc in Agriculture, Kobe University" },
     { year: "2020", jp: "神戸大学大学院農学研究科 修了", en: "MSc in Agriculture, Kobe University" }
@@ -59,6 +60,10 @@ const aboutEnText = pickSiteContent(siteContents, "about-en").text;
 const aboutJpText = pickSiteContent(siteContents, "about-jp").text;
 const aboutEnLines = aboutEnText ? aboutEnText.split("\n") : aboutProfile.en;
 const aboutJpLines = aboutJpText ? aboutJpText.split("\n") : aboutProfile.jp;
+
+// 経歴もNotion側が1件も取れなければハードコードの確定値にフォールバックする
+const notionBackgroundItems = await getBackgroundItems();
+const backgroundItems = notionBackgroundItems.length > 0 ? notionBackgroundItems : backgroundFallback;
 
 // サイトの基準URL（OGP・canonicalに使用）
 const siteUrl = Astro.site?.href ?? "https://otamochi.com/";

@@ -481,6 +481,74 @@ export async function getSiteContents(): Promise<SiteContents> {
   }
 }
 
+// 経歴（Background）1件分の型定義
+export type BackgroundItem = {
+  year: string; // 表示用にNotionの入力をそのまま持つ
+  en: string;
+  jp: string;
+};
+
+/**
+ * 公開状態の経歴（用途 = background）を取得
+ *
+ * 用途が1対1になっている他のスロットと違い background は複数レコードあるため、
+ * getSiteContents()（用途をキーにした連想配列）とは分けて配列で取得する。
+ * こうすることで既存スロットの取得処理には手を入れずに済む。
+ *
+ * @returns 年の昇順に並べたBackgroundItem配列（取得失敗時は空配列）
+ */
+export async function getBackgroundItems(): Promise<BackgroundItem[]> {
+  try {
+    const contentsDatabaseId = import.meta.env.NOTION_CONTENTS_DB_ID;
+
+    const response = await notion.databases.query({
+      database_id: contentsDatabaseId,
+      filter: {
+        and: [
+          { property: "公開", checkbox: { equals: true } },
+          { property: "用途", select: { equals: "background" } },
+        ],
+      },
+    });
+
+    const items: BackgroundItem[] = [];
+
+    for (const page of response.results as any[]) {
+      const props = page.properties;
+
+      // rich_textは装飾の切れ目で分割されるため、連結して元の文字列（改行込み）に戻す
+      const text = (props["本文"]?.rich_text || [])
+        .map((t: any) => t.plain_text)
+        .join("");
+
+      // 本文は「1行目=年 / 2行目=英文 / 3行目=和文」の3行構成
+      const lines = text.split("\n").map((line: string) => line.trim());
+      if (lines.length < 3) {
+        console.error("Background skipped (3行未満):", page.id);
+        continue;
+      }
+
+      const [year, en, jp] = lines;
+
+      // 年が数値でないものは並べ替えできないためスキップする
+      if (!/^\d+$/.test(year)) {
+        console.error("Background skipped (年が数値でない):", page.id);
+        continue;
+      }
+
+      items.push({ year, en, jp });
+    }
+
+    // Notionのレコード順に依存せず、常に年の昇順で表示する
+    items.sort((a, b) => Number(a.year) - Number(b.year));
+
+    return items;
+  } catch (err) {
+    console.error("Notion API Error (getBackgroundItems):", err);
+    return [];
+  }
+}
+
 // Journal の型定義
 export type JournalEntry = {
   id: string;
