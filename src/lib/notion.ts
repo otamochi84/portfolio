@@ -1,10 +1,70 @@
 import { Client } from "@notionhq/client";
 import fs from "node:fs/promises";
 import path from "node:path";
+import sharp from "sharp";
 
 // Notion APIクライアント初期化
 const notion = new Client({ auth: import.meta.env.NOTION_API_KEY });
 const databaseId = import.meta.env.NOTION_DATABASE_ID;
+
+// --- 画像最適化の設定 ---
+// 長辺の上限。各用途の最大表示幅の2倍（Retina想定）を満たす値にしている
+//   キービジュアル(.hero-kv-wrap)      : 880px  → 1760px
+//   スナップ写真(.about-grid 右カラム) : 928px  → 1856px ← 最大
+//   Worksサムネイル(.gallery-item)     : 768px  → 1536px
+const maxImageSize = 1920;
+
+// WebPの品質。写真の劣化が目視でわからない範囲に収めるため高めに取る
+const webpQuality = 88;
+
+// sharpで安全に再エンコードできる形式。
+// アニメーションGIFはコマ落ち、SVGはラスタライズで劣化するため対象から外す
+const optimizableFormats = ["jpeg", "png", "webp", "avif", "tiff"];
+
+/**
+ * 画像を表示サイズに見合ったサイズ・形式へ最適化する
+ * @param buffer 元画像のバッファ
+ * @param fileName 元のファイル名（拡張子含む）
+ * @returns 最適化後のバッファとファイル名（最適化しない場合は引数のまま返す）
+ */
+async function optimizeImage(
+  buffer: Buffer,
+  fileName: string
+): Promise<{ buffer: Buffer; fileName: string }> {
+  try {
+    const metadata = await sharp(buffer).metadata();
+
+    // 再エンコードで壊れる形式はそのまま保存する
+    if (!metadata.format || !optimizableFormats.includes(metadata.format)) {
+      return { buffer, fileName };
+    }
+
+    // withoutEnlargement で「上限より小さい画像は拡大しない」を担保する
+    // （引き伸ばすと画質が落ちるため、縮小方向のみ効かせる）
+    const optimized = await sharp(buffer)
+      .resize({
+        width: maxImageSize,
+        height: maxImageSize,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .webp({ quality: webpQuality })
+      .toBuffer();
+
+    // 変換してかえって重くなる画像（すでに軽量な小さい画像など）は元のまま使う
+    if (optimized.length >= buffer.length) {
+      return { buffer, fileName };
+    }
+
+    // 拡張子をWebPに差し替える
+    const webpFileName = `${fileName.replace(/\.[^.]+$/, "")}.webp`;
+    return { buffer: optimized, fileName: webpFileName };
+  } catch (e) {
+    // 最適化に失敗してもサイトの表示は止めない。元の画像をそのまま使う
+    console.error("Image optimize error:", e);
+    return { buffer, fileName };
+  }
+}
 
 // WorkItem の型定義
 export type WorkItem = {
@@ -116,9 +176,9 @@ export async function fetchOgpData(url: string): Promise<OgpData | null> {
 }
 
 /**
- * 画像をダウンロードしてローカル化する関数
+ * 画像をダウンロードし、最適化してローカル化する関数
  * @param url ダウンロード対象のURL
- * @param fileName ファイル名（拡張子含む）
+ * @param fileName ファイル名（拡張子含む。WebP変換時は拡張子が .webp に変わる）
  * @returns ローカルパス（/notion-images/{fileName}）またはエラー時は元のurl
  */
 export async function downloadImage(
@@ -132,8 +192,6 @@ export async function downloadImage(
     // ディレクトリを作成
     await fs.mkdir(publicImagesDir, { recursive: true });
 
-    // public フォルダに保存
-    const filePathPublic = path.join(publicImagesDir, fileName);
     const imgRes = await fetch(url);
     if (!imgRes.ok) {
       console.error("Failed to fetch image:", imgRes.statusText);
@@ -141,18 +199,26 @@ export async function downloadImage(
     }
 
     const arrayBuffer = await imgRes.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+
+    // 表示サイズに見合うリサイズ・WebP変換を通す（拡張子が変わりうるので名前も受け取る）
+    const { buffer, fileName: outputFileName } = await optimizeImage(
+      Buffer.from(arrayBuffer),
+      fileName
+    );
+
+    // public フォルダに保存
+    const filePathPublic = path.join(publicImagesDir, outputFileName);
     await fs.writeFile(filePathPublic, buffer);
 
     // 本番ビルド時は dist フォルダにも保存
     if (isProd) {
       const distImagesDir = path.join(process.cwd(), "dist", "notion-images");
       await fs.mkdir(distImagesDir, { recursive: true });
-      const filePathDist = path.join(distImagesDir, fileName);
+      const filePathDist = path.join(distImagesDir, outputFileName);
       await fs.writeFile(filePathDist, buffer);
     }
 
-    return `/notion-images/${fileName}`;
+    return `/notion-images/${outputFileName}`;
   } catch (e) {
     console.error("Image download error:", e);
     return url; // フォールバック
@@ -323,6 +389,95 @@ export async function getPageBlocks(pageId: string): Promise<NotionBlock[]> {
   } catch (err) {
     console.error("Notion API Error (getPageBlocks):", err);
     return [];
+  }
+}
+
+// サイト内の差し替えコンテンツ（キービジュアル・スナップ写真・About本文）の型定義
+export type SiteContent = {
+  images: string[]; // ローカルパス(/notion-images/...)の配列
+  imageAlt: string;
+  text: string; // 改行(\n)を含む本文
+};
+
+// 「用途」の値をキーにしたコンテンツの集合
+export type SiteContents = Record<string, SiteContent>;
+
+/**
+ * サイトコンテンツを用途キーで取り出す（未登録なら空の値を返す）
+ * @param contents getSiteContents() の戻り値
+ * @param usage 「用途」の値（hero-kv / about-photo / about-en / about-jp）
+ * @returns 該当するSiteContent（無ければ空のSiteContent）
+ */
+export function pickSiteContent(
+  contents: SiteContents,
+  usage: string
+): SiteContent {
+  return contents[usage] || { images: [], imageAlt: "", text: "" };
+}
+
+/**
+ * 公開状態のサイトコンテンツを取得
+ * @returns 「用途」をキーにしたSiteContentの連想配列（取得失敗時は空オブジェクト）
+ */
+export async function getSiteContents(): Promise<SiteContents> {
+  try {
+    const contentsDatabaseId = import.meta.env.NOTION_CONTENTS_DB_ID;
+
+    const response = await notion.databases.query({
+      database_id: contentsDatabaseId,
+      filter: {
+        property: "公開",
+        checkbox: {
+          equals: true,
+        },
+      },
+    });
+
+    const contents: SiteContents = {};
+
+    for (const page of response.results as any[]) {
+      const props = page.properties;
+
+      // 「用途」が未設定のレコードはキーにできないためスキップ
+      const usage = props["用途"]?.select?.name;
+      if (!usage) continue;
+
+      // rich_textは装飾の切れ目で分割されるため、連結して元の文字列（改行込み）に戻す
+      const text = (props["本文"]?.rich_text || [])
+        .map((t: any) => t.plain_text)
+        .join("");
+      const imageAlt = (props["代替テキスト"]?.rich_text || [])
+        .map((t: any) => t.plain_text)
+        .join("");
+
+      // NotionのファイルURLは期限切れするため、全枚数をビルド時にローカル化する
+      const files = props["画像"]?.files || [];
+      const images: string[] = [];
+      for (const [index, file] of files.entries()) {
+        const fileUrl = file.file?.url || file.external?.url;
+        if (!fileUrl) continue;
+
+        try {
+          // URLから拡張子を取得
+          const urlObj = new URL(fileUrl);
+          let ext = path.extname(urlObj.pathname);
+          if (!ext) ext = ".png"; // デフォルト
+
+          const fileName = `${page.id}-${index}${ext}`;
+          images.push(await downloadImage(fileUrl, fileName));
+        } catch (e) {
+          console.error("Site content image processing error:", e);
+          images.push(fileUrl); // フォールバック
+        }
+      }
+
+      contents[usage] = { images, imageAlt, text };
+    }
+
+    return contents;
+  } catch (err) {
+    console.error("Notion API Error (getSiteContents):", err);
+    return {};
   }
 }
 

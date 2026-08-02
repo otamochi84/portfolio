@@ -1,7 +1,8 @@
 ---
-import { getWorks, getJournalEntries } from "../lib/notion";
+import { getWorks, getJournalEntries, getSiteContents, pickSiteContent } from "../lib/notion";
 
-// プロフィール（About）。改行位置はデザイン確定値のため <br> で固定する
+// プロフィール（About）。Notion側の本文が空のときに使うフォールバック
+// 改行位置はデザイン確定値のため <br> で固定する
 const aboutProfile = {
     name: "Ryota Ohashi",
     wordmark: "otamochi",
@@ -47,6 +48,17 @@ const contactUrl = "https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e15
 // Notionから実績・活動記録を取得
 const works = await getWorks();
 const journalEntries = await getJournalEntries();
+
+// Notionから差し替えコンテンツ（キービジュアル・スナップ写真・About本文）を取得
+const siteContents = await getSiteContents();
+const heroKv = pickSiteContent(siteContents, "hero-kv");
+const aboutPhoto = pickSiteContent(siteContents, "about-photo");
+
+// About本文はNotion側が空ならハードコードの確定値にフォールバックする
+const aboutEnText = pickSiteContent(siteContents, "about-en").text;
+const aboutJpText = pickSiteContent(siteContents, "about-jp").text;
+const aboutEnLines = aboutEnText ? aboutEnText.split("\n") : aboutProfile.en;
+const aboutJpLines = aboutJpText ? aboutJpText.split("\n") : aboutProfile.jp;
 
 // サイトの基準URL（OGP・canonicalに使用）
 const siteUrl = Astro.site?.href ?? "https://otamochi.com/";
@@ -169,8 +181,17 @@ const formatDate = (value) => {
             <div class="hero-welcome-rule"></div>
         </div>
         <div class="hero-kv-wrap">
-            <!-- 画像素材は未確定のためプレースホルダ（背景色）で表示する -->
-            <div class="hero-kv kv-tone"></div>
+            <!-- 画像はNotionから取得。0枚のときはプレースホルダ（背景色）のまま表示する -->
+            <div class="hero-kv kv-tone slideshow" data-slideshow>
+                {heroKv.images.map((src, index) => (
+                    <img
+                        class:list={["slide", { "is-active": index === 0 }]}
+                        src={src}
+                        alt={index === 0 ? heroKv.imageAlt : ""}
+                        loading={index === 0 ? "eager" : "lazy"}
+                    />
+                ))}
+            </div>
         </div>
     </header>
 
@@ -188,7 +209,7 @@ const formatDate = (value) => {
                     <span class="about-wordmark" aria-hidden="true">{aboutProfile.wordmark}</span>
                 </div>
                 <p class="body-en">
-                    {aboutProfile.en.map((line, index) => (
+                    {aboutEnLines.map((line, index) => (
                         <>
                             {index > 0 && <br />}
                             {line}
@@ -198,7 +219,7 @@ const formatDate = (value) => {
                 <!-- 和文の下端を右カラムの下端に揃えるための伸縮スペーサー -->
                 <div class="about-spacer"></div>
                 <p class="body-jp">
-                    {aboutProfile.jp.map((line, index) => (
+                    {aboutJpLines.map((line, index) => (
                         <>
                             {index > 0 && <br />}
                             {line}
@@ -207,8 +228,19 @@ const formatDate = (value) => {
                 </p>
             </div>
             <div class="about-col">
-                <!-- スナップ写真は未確定のためプレースホルダ（背景色）で表示する -->
-                <div class="about-photo"></div>
+                <!-- 写真を比率固定にしたぶんの高さの余りを吸収し、下の塊を右カラム下端に寄せる -->
+                <div class="about-photo-spacer"></div>
+                <!-- 画像はNotionから取得。0枚のときはプレースホルダ（背景色）のまま表示する -->
+                <div class="about-photo slideshow" data-slideshow>
+                    {aboutPhoto.images.map((src, index) => (
+                        <img
+                            class:list={["slide", { "is-active": index === 0 }]}
+                            src={src}
+                            alt={index === 0 ? aboutPhoto.imageAlt : ""}
+                            loading="lazy"
+                        />
+                    ))}
+                </div>
                 <div class="about-background">
                     <p class="about-background-title">Background</p>
                     <!-- 年号の左に置く菱形マークは .about-background-year の疑似要素で描く -->

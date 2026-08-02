@@ -1,6 +1,9 @@
 # build output
 dist/
 
+# Notionからビルド時に落とす画像（毎回再生成されるため追跡しない）
+public/notion-images/
+
 # generated types
 .astro/
 

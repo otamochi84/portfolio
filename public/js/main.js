@@ -7,6 +7,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     setupIntro();
     setupNavToggle();
+    setupSlideshows();
     setupGallery();
     initScrollAnimations();
 });
@@ -80,6 +81,38 @@ function setupNavToggle() {
     // PC幅へ戻したときに開いた状態が残らないようリセットする
     window.matchMedia('(min-width: 768px)').addEventListener('change', (e) => {
         if (e.matches) closeNav();
+    });
+}
+
+// 画像スライドショー（キービジュアル・スナップ写真）の自動切替
+// 重なりとフェードはCSS側で完結し、ここでは is-active の付け替えだけを行う
+function setupSlideshows() {
+    const slideshows = document.querySelectorAll('[data-slideshow]');
+    if (slideshows.length === 0) return;
+
+    // 動きを減らす設定のユーザーには自動切替せず、1枚目を出したままにする
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const displayDuration = 6000; // 1枚を表示し続ける時間(ms)
+    const startInterval = 3000;   // 2枚のスライドショーが同時に切り替わらないようずらす時間(ms)
+
+    slideshows.forEach((slideshow, slideshowIndex) => {
+        const slides = slideshow.querySelectorAll('.slide');
+
+        // 1枚だけなら静止画として扱い、タイマーを動かさない
+        if (slides.length < 2) return;
+
+        let currentIndex = 0;
+        const showNextSlide = () => {
+            slides[currentIndex].classList.remove('is-active');
+            currentIndex = (currentIndex + 1) % slides.length;
+            slides[currentIndex].classList.add('is-active');
+        };
+
+        // 開始タイミングをずらしてから一定間隔で切り替える
+        setTimeout(() => {
+            setInterval(showNextSlide, displayDuration);
+        }, startInterval * slideshowIndex);
     });
 }
 

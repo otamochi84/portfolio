@@ -382,6 +382,23 @@
             z-index: 2;
         }
 
+        /* --- 画像スライドショー（キービジュアル・スナップ写真で共用） --- */
+        /* 枚数でレイアウトの高さが変わらないよう、全カットを重ねてopacityだけ切り替える */
+        .slideshow {
+            position: relative;
+        }
+
+        .slideshow .slide {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 1.2s ease-in-out;
+        }
+
+        .slideshow .slide.is-active {
+            opacity: 1;
+        }
+
         /* --- セクション共通 --- */
         .sec {
             position: relative;
@@ -501,16 +518,24 @@
             min-height: 2.5rem;
         }
 
-        /* 比率を固定すると左右の下端が揃わなくなるためflexで高さを吸収させる */
-        .about-photo {
+        /* 写真の上に置く伸縮スペーサー。写真を比率固定にしたことで生じる高さの余りをここで吸収し、
+           写真＋Backgroundの塊を右カラムの下端に寄せる（左カラムの .about-spacer と同じ考え方） */
+        .about-photo-spacer {
             flex: 1;
             min-height: 0;
+        }
+
+        /* 貼る写真の比率を決め打ちにするため 3:2 で固定する */
+        .about-photo {
+            flex: none;
+            aspect-ratio: 3 / 2;
             width: 100%;
             background-color: #e5e7eb;
             overflow: hidden;
             margin-bottom: 1.5rem;
         }
 
+        /* エリアの比率に合わせて切り取って表示する（比率を固定したので余白は出ない） */
         .about-photo img {
             width: 100%;
             height: 100%;
@@ -734,7 +759,7 @@
                 padding: 0 48px 2.5rem;
             }
 
-            /* 1カラムに落とすため写真は比率固定に切り替える */
+            /* 1カラムに落とすため下端揃えは不要になる。スペーサーは伸縮させない */
             .about-grid {
                 grid-template-columns: 1fr;
                 min-height: 0;
@@ -742,14 +767,13 @@
                 gap: 2.5rem;
             }
 
-            .about-photo {
-                flex: none;
-                aspect-ratio: 4 / 3;
-            }
-
             .about-spacer {
                 flex: none;
                 min-height: 2rem;
+            }
+
+            .about-photo-spacer {
+                flex: none;
             }
         }
 
