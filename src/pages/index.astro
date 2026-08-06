@@ -1,5 +1,5 @@
 ---
-import { getWorks, getJournalEntries, getSiteContents, pickSiteContent, getBackgroundItems } from "../lib/notion";
+import { getWorkCategories, getJournalEntries, getSiteContents, pickSiteContent, getBackgroundItems } from "../lib/notion";
 
 // プロフィール（About）。Notion側の本文が空のときに使うフォールバック
 // 改行位置はデザイン確定値のため <br> で固定する
@@ -36,18 +36,17 @@ const backgroundFallback = [
     { year: "2020", jp: "神戸大学大学院農学研究科 修了", en: "MSc in Agriculture, Kobe University" }
 ];
 
-// ナビゲーションのリンク（Serviceのみ別ページ）
+// ナビゲーションのリンク（すべてトップ内のアンカー）
 const navLinks = [
     { label: "About", href: "#about" },
     { label: "Journal", href: "#journal" },
-    { label: "Works", href: "#works" },
-    { label: "Service", href: "/service" }
+    { label: "Works", href: "#works" }
 ];
 
 const contactUrl = "https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105";
 
-// Notionから実績・活動記録を取得
-const works = await getWorks();
+// Notionから活動カテゴリ（Worksの3カード）・活動記録を取得
+const workCategories = await getWorkCategories();
 const journalEntries = await getJournalEntries();
 
 // Notionから差し替えコンテンツ（キービジュアル・スナップ写真・About本文）を取得
@@ -70,19 +69,6 @@ const siteUrl = Astro.site?.href ?? "https://otamochi.com/";
 
 // メタディスクリプション（トップページ共通）
 const metaDescription = "奈良を拠点に、中小企業・個人向けのNotion導入・構築を支援するotamochiのポートフォリオサイト。データベース設計・自動化・テンプレート制作の実績と活動記録。";
-
-// JSに渡すデータの形成（externalUrl と slug を含める）
-const notionData = works.map(work => ({
-    id: work.id,
-    title: work.title,
-    client: work.client,
-    category: work.category,
-    overview: work.overview,
-    tools: work.tools,
-    thumbnail: work.thumbnail,
-    externalUrl: work.externalUrl,
-    slug: work.slug
-}));
 
 // 日付を YYYY.MM.DD 形式に整える
 const formatDate = (value) => {
@@ -122,14 +108,10 @@ const formatDate = (value) => {
     <link rel="canonical" href={siteUrl}>
 
     <!-- 外部ドメインへの事前接続（表示高速化） -->
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- アニメーションライブラリ Anime.js（モーダルの開閉に使用） -->
-    <script is:inline defer src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-
-    <!-- 外部JSの読み込み（deferでanime.jsの後に実行） -->
+    <!-- 外部JSの読み込み -->
     <script is:inline defer src="/js/main.js"></script>
 
     <!-- Google Fonts（Jost / Noto Sans JP / Quicksand） -->
@@ -285,13 +267,25 @@ const formatDate = (value) => {
         </div>
     </section>
 
-    <!-- Works（実績） -->
+    <!-- Works（活動カテゴリ3枚。個別の実績は各カテゴリページの中に置く） -->
     <section id="works" class="sec sec-white">
         <div class="sec-head">
             <h2 class="sec-title">Works</h2>
             <div class="sec-rule"></div>
         </div>
-        <div id="gallery-grid"></div>
+        <div class="wcard-list">
+            {workCategories.map((category) => (
+                <a href={`/works/${category.slug}/`} class="wcard link-hover-target">
+                    <!-- 画像はNotionから取得。未登録のときはプレースホルダ（背景色）のまま表示する -->
+                    <div class="wcard-image">
+                        {category.image && (
+                            <img src={category.image} alt={category.title} loading="lazy" />
+                        )}
+                    </div>
+                    <p class="wcard-title">{category.title}</p>
+                </a>
+            ))}
+        </div>
     </section>
 
     <!-- Contact（コピーライトのみ） -->
@@ -299,46 +293,6 @@ const formatDate = (value) => {
         <p class="site-copyright">&copy; {new Date().getFullYear()} otamochi</p>
     </section>
 
-    <!-- カード型モーダル -->
-    <div id="content-modal" onclick="closeModal(event)">
-        <div class="modal-card" onclick="event.stopPropagation()">
-            <div class="close-btn" onclick="closeModal(event)" role="button" tabindex="0" aria-label="閉じる">
-                <svg viewBox="0 0 60 60" fill="none">
-                    <path d="M20 20L40 40M40 20L20 40" stroke="#111" stroke-width="3" stroke-linecap="round" />
-                </svg>
-            </div>
-            <img id="modal-card-image" class="modal-card-image" src="" alt="">
-            <div class="modal-card-content">
-                <!-- クライアント名とカテゴリ -->
-                <div class="modal-card-meta">
-                    <span id="modal-card-client" class="modal-card-client"></span>
-                    <span id="modal-card-category" class="modal-card-category"></span>
-                </div>
-
-                <h3 id="modal-card-title" class="modal-card-title"></h3>
-
-                <!-- 使用ツール -->
-                <div id="modal-card-tools" class="modal-card-tools"></div>
-
-                <!-- 概要 -->
-                <p id="modal-card-desc" class="modal-card-desc"></p>
-
-                <a id="modal-card-link" href="#" target="_blank" class="modal-card-link"
-                    style="display: none;">
-                    プロジェクトを見る ↗
-                </a>
-                <a id="modal-card-detail" href="#" class="modal-card-link"
-                    style="display: none;">
-                    詳しく見る →
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- 外部JSの処理にAstroから取得したNotionデータを渡す -->
-    <script is:inline define:vars={{ notionData }}>
-        window.notionDataFromAstro = notionData;
-    </script>
 </body>
 
 </html>

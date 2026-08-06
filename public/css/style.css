@@ -62,13 +62,6 @@
             outline-offset: 3px;
         }
 
-        /* ギャラリーカードはホバーでもリングを表示（マウス操作時の手がかり） */
-        .gallery-item:hover {
-            outline: 2px solid #b3592f;
-            outline-offset: 3px;
-        }
-
-
         /* --- フローティングナビゲーション (NEW) --- */
         .floating-nav {
             position: fixed;
@@ -414,10 +407,6 @@
             background-color: var(--bg-body);
         }
 
-        .sec-service {
-            padding-bottom: 5rem;
-        }
-
         .sec-head {
             display: flex;
             align-items: center;
@@ -671,6 +660,20 @@
             transform: translateX(10px);
         }
 
+        /* 案件名の右に添えるカテゴリ（Notionタグ風バッジ）。
+           Journalの一覧では使わず、カテゴリページの実績一覧でのみ出る */
+        .jrow-category {
+            display: inline-block;
+            margin-left: 0.9em;
+            background-color: #f7e7de;
+            color: #b3592f;
+            font-size: 0.7rem;
+            font-weight: 500;
+            line-height: 1.6;
+            padding: 0.1em 0.65em;
+            border-radius: 4px;
+        }
+
         .jrow-arrow {
             font-size: 0.65rem;
             letter-spacing: 0.2em;
@@ -701,34 +704,6 @@
         .viewall-link:hover {
             color: #b3592f;
             border-bottom-color: #b3592f;
-        }
-
-        /* --- Service --- */
-        .service-outer {
-            width: min(74vw, 1120px);
-            max-width: 100%;
-            margin: 0 auto;
-        }
-
-        .service-inner {
-            max-width: 34rem;
-        }
-
-        .service-p {
-            margin-top: 2rem;
-        }
-
-        .service-p:first-child {
-            margin-top: 0;
-        }
-
-        .service-p-closing {
-            color: var(--text-main);
-        }
-
-        /* 日本語群は英文から離す */
-        .service-p-jp-first {
-            margin-top: 3rem;
         }
 
         /* --- Contact（コピーライトのみ） --- */
@@ -881,130 +856,131 @@
             .jrow-date {
                 grid-column: 1 / -1;
             }
-
-            .service-outer {
-                width: 100%;
-            }
         }
 
-        #gallery-grid {
+        /* --- Works（活動カテゴリのカード） --- */
+        /* カードは3枚しかないため、モバイルは横スクロールではなく縦積みにする。
+           横スクロールは「まだ続く」ことを伝える仕掛けだが、3枚なら1画面に収まり、
+           写真が主役のカードは大きく見せたほうが伝わるため */
+        .wcard-list {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 1rem;
+            gap: 2.5rem;
         }
 
         @media (min-width: 768px) {
-            #gallery-grid {
-                grid-template-columns: repeat(2, 1fr);
+            .wcard-list {
+                grid-template-columns: repeat(3, 1fr);
                 gap: 2rem;
             }
         }
 
-        @media (min-width: 1024px) {
-            #gallery-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
-        .gallery-item {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 1 / 1;
+        /* 額縁のように、細い線と余白でカード全体を囲う。
+           枠そのものは動かさず、中の画像だけが動く見せ方にするための土台。
+           overflow:hidden は「揺れても画像が枠線を越えない」ための確定仕様
+           （余白0.75remは額縁のマットとしてそのまま残す） */
+        .wcard {
+            display: block;
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            color: var(--text-main);
             overflow: hidden;
+        }
+
+        /* 貼る写真の比率を決め打ちにするため 3:2 で固定する（About のスナップ写真と同じ考え方）。
+           画像が未登録のあいだは背景色がそのままプレースホルダになる */
+        .wcard-image {
+            aspect-ratio: 3 / 2;
+            width: 100%;
             background-color: #e5e7eb;
-            opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 0.8s ease, transform 0.8s ease;
-            cursor: pointer;
+            overflow: hidden;
         }
 
-        .gallery-item.is-visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .gallery-item img {
+        .wcard-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 1.5s cubic-bezier(0.19, 1, 0.22, 1);
-            will-change: transform;
             display: block;
         }
 
-        .gallery-item:hover img {
-            transform: scale(1.05);
+        .wcard-title {
+            margin-top: 0.9rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.16em;
+            color: var(--text-main);
+            transition: color 0.3s ease;
         }
 
-        .gallery-overlay {
-            position: absolute;
-            inset: 0;
-            background-color: #000;
-            opacity: 0;
-            transition: opacity 0.5s ease;
+        .wcard:hover .wcard-title {
+            color: #b3592f;
         }
 
-        .gallery-item:hover .gallery-overlay {
-            opacity: 0.3;
+        /* --- Worksカードの揺れ --- */
+        /* 枠とタイトルは動かさず、中の画像だけを揺らす。
+           額縁に架けた絵のように見せるため、支点は画像の上端中央に置く */
+        .wcard-image {
+            transform-origin: top center;
         }
 
-        .gallery-caption {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.5s ease;
+        /* ホバー中ずっとゆっくり揺れ続ける（最大1.3deg・2.8s・無限ループ）。
+           角度はサインカーブそのもので、式は次のとおり:
+               角度 = 1.3deg × sin(2π × t)   t は進行度（0〜1）
+           これを5%刻み（21点 ＝ 1周期あたり20分割）で近似している。
+
+           細かく刻んで animation-timing-function を linear にしているのが要点。
+           CSSのタイミング関数はキーフレームの「区間ごと」に効くため、
+           4点程度の粗いキーフレームに ease-in-out を掛けると
+           区間の境目で毎回 減速→停止→加速 が起きてカクついて見える。
+           刻みを細かくして linear で繋げば区間ごとのタメが消え、
+           加減速はサインカーブ自身の値の変化だけが担う。
+
+           0%と100%はどちらも0degで、その手前・直後の傾きも同じ（-0.402→0→+0.402）なので、
+           ループの繋ぎ目で角度も進行方向も連続する。 */
+        @keyframes wcardImageSway {
+            0% { transform: rotate(0deg); }
+            5% { transform: rotate(0.402deg); }
+            10% { transform: rotate(0.764deg); }
+            15% { transform: rotate(1.052deg); }
+            20% { transform: rotate(1.236deg); }
+            25% { transform: rotate(1.3deg); }
+            30% { transform: rotate(1.236deg); }
+            35% { transform: rotate(1.052deg); }
+            40% { transform: rotate(0.764deg); }
+            45% { transform: rotate(0.402deg); }
+            50% { transform: rotate(0deg); }
+            55% { transform: rotate(-0.402deg); }
+            60% { transform: rotate(-0.764deg); }
+            65% { transform: rotate(-1.052deg); }
+            70% { transform: rotate(-1.236deg); }
+            75% { transform: rotate(-1.3deg); }
+            80% { transform: rotate(-1.236deg); }
+            85% { transform: rotate(-1.052deg); }
+            90% { transform: rotate(-0.764deg); }
+            95% { transform: rotate(-0.402deg); }
+            100% { transform: rotate(0deg); }
         }
 
-        .gallery-item:hover .gallery-caption {
-            opacity: 1;
-        }
-
-        .view-btn {
-            color: #fff;
-            font-size: 0.75rem;
-            letter-spacing: 0.3em;
-            font-weight: 300;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            padding: 0.5rem 1rem;
-            background-color: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(2px);
-        }
-
-        /* --- Works（モバイル）: 横スクロール1行（スナップ付き） --- */
-        @media (max-width: 767px) {
-
-            /* .sec の左右パディングを打ち消して画面端まで流す。
-               カードが画面端で切れることが「まだ続く」という手がかりになるため、
-               パディング内に収める案より端まで見せる方を採った */
-            #gallery-grid {
-                display: flex;
-                gap: 0.75rem;
-                overflow-x: auto;
-                overflow-y: hidden;
-                scroll-snap-type: x mandatory;
-                margin-inline: calc(var(--spacing-container) * -1);
-                padding-inline: var(--spacing-container);
-                scroll-padding-inline-start: var(--spacing-container);
-                -webkit-overflow-scrolling: touch;
-                /* スクロールバーは隠す（Firefox / WebKit） */
-                scrollbar-width: none;
+        /* タッチ端末で:hoverが貼り付かないよう、揺れはホバー可能な環境に限定する。
+           ホバー判定は枠（.wcard）で取り、動かすのは中の画像だけにする */
+        @media (hover: hover) {
+            .wcard:hover .wcard-image {
+                /* 1度以下の微小な回転は、要素が合成レイヤーに乗っていないと
+                   毎フレーム再ラスタライズされ、ピクセル単位のズレでカクついて見える。
+                   will-change: transform で合成レイヤーに載せて、この描画由来のカクつきを消す。
+                   ただし常時付けると全カードぶんのレイヤーを常に確保してメモリを食うので、
+                   揺れが発生する :hover のあいだだけに限定している */
+                will-change: transform;
+                animation: wcardImageSway 2.8s linear infinite;
             }
+        }
 
-            #gallery-grid::-webkit-scrollbar {
-                display: none;
-            }
-
-            /* 78vw（375pxで約292px）にして、次のカードが約47px覗くようにする。
-               入場アニメ（.is-visible待ち）は縦スクロール前提のため横スクロールでは切る。
-               切らないと画面外のカードが透明のまま残りうる */
-            .gallery-item {
-                flex: 0 0 78vw;
-                scroll-snap-align: start;
-                opacity: 1;
-                transform: none;
+        /* 動きを減らす設定のユーザーには揺らさない。
+           揺れないなら合成レイヤーを確保する意味もないので will-change も戻す */
+        @media (prefers-reduced-motion: reduce) {
+            .wcard:hover .wcard-image {
+                animation: none !important;
+                will-change: auto !important;
             }
         }
 
@@ -1066,163 +1042,6 @@
             .journal-title {
                 font-size: 0.9rem;
             }
-        }
-
-        /* ==========================================================================
-           Notion風 コンテンツ詳細ポップアップ (モーダル) のスタイル
-           ========================================================================== */
-        #content-modal {
-            position: fixed;
-            inset: 0;
-            z-index: 15000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(8px);
-            opacity: 0;
-            padding: 1rem;
-        }
-
-        .modal-card {
-            background-color: #fff;
-            width: 100%;
-            max-width: 700px;
-            max-height: 90vh;
-            border-radius: 16px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            position: relative;
-            transform: scale(0.95) translateY(20px);
-            opacity: 0;
-        }
-
-        .modal-card-image {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-            background-color: #f3f4f6;
-            flex-shrink: 0;
-        }
-
-        @media (min-width: 768px) {
-            .modal-card-image {
-                height: 350px;
-            }
-        }
-
-        .modal-card-content {
-            padding: 2rem;
-            overflow-y: auto;
-            flex: 1;
-        }
-
-        @media (min-width: 768px) {
-            .modal-card-content {
-                padding: 3rem;
-            }
-        }
-
-        .modal-card-meta {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 0.5rem;
-            font-size: 0.85rem;
-        }
-
-        .modal-card-client {
-            color: #6b7280;
-            font-weight: 500;
-        }
-
-        .modal-card-category {
-            background-color: #f3f4f6;
-            color: #4b5563;
-            padding: 0.2rem 0.6rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .modal-card-title {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            color: #111;
-            line-height: 1.3;
-        }
-
-        .modal-card-tools {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-card-tool-badge {
-            background-color: #e5e7eb;
-            color: #374151;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-        }
-
-        .modal-card-desc {
-            font-size: 1rem;
-            line-height: 1.8;
-            color: #4b5563;
-            white-space: pre-line;
-            margin-bottom: 2rem;
-        }
-
-        .modal-card-link {
-            display: inline-flex;
-            align-items: center;
-            background-color: #111;
-            color: #fff;
-            padding: 0.8rem 1.8rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            transition: background-color 0.3s ease;
-        }
-
-        .modal-card-link:hover {
-            background-color: #333;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            z-index: 20000;
-            cursor: pointer;
-            width: 40px;
-            height: 40px;
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, background-color 0.3s ease;
-        }
-
-        .close-btn:hover {
-            background-color: #fff;
-        }
-
-        .close-btn svg {
-            width: 20px;
-            height: 20px;
-            transition: transform 0.5s ease;
-        }
-
-        .close-btn:hover svg {
-            transform: rotate(90deg);
         }
 
         /* 動きを減らす設定のユーザーにはアニメーション・スムーズスクロールを無効化 */

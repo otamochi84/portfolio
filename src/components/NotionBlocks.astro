@@ -20,6 +20,18 @@ function escapeHtml(text: string): string {
 }
 
 /**
+ * テキストをHTMLエスケープしたうえで、改行(\n)を<br />に変換する
+ *
+ * Notionの段落内改行（Shift+Enter）はplain_textに\nとして入るが、
+ * そのままHTMLに入れると空白に潰れるため、Notionでの見た目どおりに改行させる。
+ * 先にエスケープしてから\nだけを<br />に置き換えるので、
+ * 本文に "<br>" と書かれていても要素にはならない（XSS対策）。
+ */
+function escapeHtmlWithBreaks(text: string): string {
+  return escapeHtml(text).split(/\r?\n/).join("<br />");
+}
+
+/**
  * リッチテキスト配列をHTMLに変換
  */
 function renderRichText(richTexts: any[]): string {
@@ -29,14 +41,16 @@ function renderRichText(richTexts: any[]): string {
 
   for (const text of richTexts) {
     const content = text.plain_text || "";
-    const escaped = escapeHtml(content);
+    // 段落・見出し・リスト・引用・コールアウト等はすべてこの関数を通るため、
+    // ここで改行を変換すればブロック種別によらず同じ挙動になる
+    const escaped = escapeHtmlWithBreaks(content);
     let result = escaped;
     let shouldSkipDecorations = false;
 
     // メンション処理（リンク処理より前）
     if (text.type === "mention" && text.mention?.link_mention) {
       const lm = text.mention.link_mention;
-      const label = escapeHtml(lm.title || text.plain_text || lm.href);
+      const label = escapeHtmlWithBreaks(lm.title || text.plain_text || lm.href);
       const iconImg = lm.icon_url
         ? `<img class="notion-mention-icon" src="${escapeHtml(lm.icon_url)}" alt="" loading="lazy">`
         : "";

@@ -5,13 +5,15 @@ import sharp from "sharp";
 
 // Notion APIクライアント初期化
 const notion = new Client({ auth: import.meta.env.NOTION_API_KEY });
+
+// 実績DB（Notion上の名称は HP_Projects）。環境変数のキー名は既存デプロイと揃えるため据え置き
 const databaseId = import.meta.env.NOTION_DATABASE_ID;
 
 // --- 画像最適化の設定 ---
 // 長辺の上限。各用途の最大表示幅の2倍（Retina想定）を満たす値にしている
 //   キービジュアル(.hero-kv-wrap)      : 880px  → 1760px
 //   スナップ写真(.about-grid 右カラム) : 928px  → 1856px ← 最大
-//   Worksサムネイル(.gallery-item)     : 768px  → 1536px
+//   Worksカテゴリカード(.wcard-image)  : 3列なので実質600px前後 → 1200px
 const maxImageSize = 1920;
 
 // WebPの品質。写真の劣化が目視でわからない範囲に収めるため高めに取る
@@ -66,8 +68,8 @@ async function optimizeImage(
   }
 }
 
-// WorkItem の型定義
-export type WorkItem = {
+// 実績（HP_Projects）1件分の型定義
+export type ProjectItem = {
   id: string;
   slug: string | null; // スラッグ未設定ならnull
   title: string;
@@ -75,7 +77,7 @@ export type WorkItem = {
   category: string;
   overview: string;
   tools: string[];
-  thumbnail: string; // ローカルパス(/notion-images/...)
+  thumbnail: string; // ローカルパス(/notion-images/...)。サムネイル未設定なら空文字
   externalUrl: string | null;
   date: string | null; // ISO文字列
 };
@@ -226,10 +228,10 @@ export async function downloadImage(
 }
 
 /**
- * 公開状態の実績を取得
- * @returns 公開かつ実施時期でソートされたWorkItem配列
+ * 公開状態の実績（HP_Projects）を取得
+ * @returns 公開かつ実施時期でソートされたProjectItem配列
  */
-export async function getWorks(): Promise<WorkItem[]> {
+export async function getProjects(): Promise<ProjectItem[]> {
   try {
     const response = await notion.databases.query({
       database_id: databaseId,
@@ -247,7 +249,7 @@ export async function getWorks(): Promise<WorkItem[]> {
       ],
     });
 
-    const works = await Promise.all(
+    const projects = await Promise.all(
       response.results.map(async (page: any) => {
         const props = page.properties;
 
@@ -274,9 +276,9 @@ export async function getWorks(): Promise<WorkItem[]> {
         const date =
           dateObject && dateObject.start ? dateObject.start : null;
 
-        // サムネイル画像の処理
+        // サムネイル画像の処理（未設定なら空文字。外部のダミー画像には依存しない）
         const thumbnailFile = props["サムネイル"]?.files?.[0];
-        let thumbnail = "https://picsum.photos/seed/notion/800/800"; // デフォルト画像
+        let thumbnail = "";
         if (thumbnailFile) {
           const fileUrl = thumbnailFile.file?.url || thumbnailFile.external?.url;
           if (fileUrl) {
@@ -310,9 +312,98 @@ export async function getWorks(): Promise<WorkItem[]> {
       })
     );
 
-    return works;
+    return projects;
   } catch (err) {
-    console.error("Notion API Error (getWorks):", err);
+    console.error("Notion API Error (getProjects):", err);
+    return [];
+  }
+}
+
+// Worksカテゴリ（HP_Works）1件分の型定義
+export type WorkCategory = {
+  id: string;
+  slug: string;
+  title: string;
+  overview: string;
+  image: string; // ローカルパス(/notion-images/...)。画像が未登録なら空文字
+};
+
+/**
+ * 公開状態のWorksカテゴリを取得
+ *
+ * トップの3カードとカテゴリページ（/works/[slug]）の両方がこの関数を使う。
+ * 各レコードのページ本文がカテゴリページの中身になるため、idも返している。
+ *
+ * @returns 並び順の昇順に並べたWorkCategory配列（取得失敗時は空配列）
+ */
+export async function getWorkCategories(): Promise<WorkCategory[]> {
+  try {
+    const worksDatabaseId = import.meta.env.NOTION_WORKS_DB_ID;
+
+    const response = await notion.databases.query({
+      database_id: worksDatabaseId,
+      filter: {
+        property: "公開",
+        checkbox: {
+          equals: true,
+        },
+      },
+      sorts: [
+        {
+          property: "並び順",
+          direction: "ascending",
+        },
+      ],
+    });
+
+    const categories: WorkCategory[] = [];
+
+    for (const page of response.results as any[]) {
+      const props = page.properties;
+
+      const title = props["名前"]?.title?.[0]?.plain_text || "名称未設定";
+
+      // rich_textは装飾の切れ目で分割されるため、連結して元の文字列に戻す
+      const slug = (props["スラッグ"]?.rich_text || [])
+        .map((t: any) => t.plain_text)
+        .join("");
+      const overview = (props["概要"]?.rich_text || [])
+        .map((t: any) => t.plain_text)
+        .join("");
+
+      // スラッグが無いとページのURLを決められないためスキップする
+      if (!slug) {
+        console.error("WorkCategory skipped (スラッグ未設定):", page.id);
+        continue;
+      }
+
+      // NotionのファイルURLは期限切れするため、ビルド時にローカル化する。
+      // 画像は1枚だけ使う。未登録のときは空文字のままにし、表示側のプレースホルダに任せる
+      let image = "";
+      const imageFile = props["画像"]?.files?.[0];
+      if (imageFile) {
+        const fileUrl = imageFile.file?.url || imageFile.external?.url;
+        if (fileUrl) {
+          try {
+            // URLから拡張子を取得
+            const urlObj = new URL(fileUrl);
+            let ext = path.extname(urlObj.pathname);
+            if (!ext) ext = ".png"; // デフォルト
+
+            image = await downloadImage(fileUrl, `${page.id}${ext}`);
+          } catch (e) {
+            console.error("WorkCategory image processing error:", e);
+            image = fileUrl; // フォールバック
+          }
+        }
+      }
+
+      categories.push({ id: page.id, slug, title, overview, image });
+    }
+
+    return categories;
+  } catch (err) {
+    console.error("Notion API Error (getWorkCategories):", err);
     return [];
   }
 }

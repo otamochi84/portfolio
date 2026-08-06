@@ -1,0 +1,164 @@
+---
+import { getProjects, getPageBlocks } from "../../lib/notion";
+import NotionBlocks from "../../components/NotionBlocks.astro";
+
+// 静的パス生成: スラッグが設定されている実績のみ
+export async function getStaticPaths() {
+  const projects = await getProjects();
+  return projects
+    .filter((project) => project.slug)
+    .map((project) => ({
+      params: { slug: project.slug },
+      props: { project },
+    }));
+}
+
+interface Props {
+  project: any;
+}
+
+const { project } = Astro.props;
+
+// ページの本文ブロック取得
+const blocks = await getPageBlocks(project.id);
+
+// 前後の実績ナビ（getProjectsは実施時期の降順なので、前=新しい実績・後=古い実績）
+const allProjects = await getProjects();
+const sluggedProjects = allProjects.filter((p) => p.slug);
+const currentIndex = sluggedProjects.findIndex((p) => p.id === project.id);
+const newerProject = currentIndex > 0 ? sluggedProjects[currentIndex - 1] : null;
+const olderProject = currentIndex !== -1 && currentIndex < sluggedProjects.length - 1 ? sluggedProjects[currentIndex + 1] : null;
+
+// メタディスクリプション: 概要の先頭120字（改行はスペースに置換）
+const metaDescription = (project.overview || "").substring(0, 120).replace(/\n/g, " ");
+
+// OGP・canonical用の絶対URL
+const pageUrl = new URL(`/projects/${project.slug}/`, Astro.site).href;
+// サムネイル未設定時はリンク切れのog:imageを出さない（/works/[slug]と同じ扱い）
+const ogImage = project.thumbnail ? new URL(project.thumbnail, Astro.site).href : null;
+
+// 実施時期フォーマット: YYYY.MM (nullなら空文字)
+let dateFormatted = "";
+if (project.date) {
+  const dateObj = new Date(project.date);
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  dateFormatted = `${year}.${month}`;
+}
+---
+
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#f8f8f8">
+    <meta name="description" content={metaDescription}>
+
+    <title>{project.title} | otamochi portfolio</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+    <!-- OGP タグ -->
+    <meta property="og:title" content={`${project.title} | otamochi portfolio`}>
+    <meta property="og:description" content={metaDescription}>
+    <meta property="og:type" content="article">
+    {ogImage && <meta property="og:image" content={ogImage}>}
+    <meta property="og:url" content={pageUrl}>
+
+    <!-- canonical -->
+    <link rel="canonical" href={pageUrl}>
+
+    <!-- Google Fontsへの事前接続（表示高速化） -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Google Fonts 読み込み -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Quicksand:wght@500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- CSS読み込み -->
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/works.css">
+</head>
+
+<body class="antialiased">
+
+    <!-- フローティングナビゲーション -->
+    <nav class="floating-nav">
+        <a href="/#works" class="nav-brand link-hover-target">← Home</a>
+        <a href="https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105" target="_blank" rel="noopener noreferrer" class="nav-contact-btn link-hover-target">Contact</a>
+    </nav>
+
+    <!-- ヘッダー（実施時期 → 案件名 → カテゴリの順のシンプル構成） -->
+    <header class="work-header">
+        {dateFormatted && <p class="work-date">{dateFormatted}</p>}
+
+        <!-- 案件名 -->
+        <h1 class="work-title">{project.title}</h1>
+
+        <!-- カテゴリ -->
+        <p class="work-category">{project.category}</p>
+
+        <!-- 連携ツール（テキストのみ） -->
+        {project.tools && project.tools.length > 0 && (
+            <p class="work-tools">連携ツール：{project.tools.join(' / ')}</p>
+        )}
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="work-article">
+        <!-- Notion本文 -->
+        <NotionBlocks blocks={blocks} />
+
+        <!-- 外部リンク（あれば） -->
+        {project.externalUrl && (
+            <div class="work-external-link">
+                <a href={project.externalUrl} target="_blank" rel="noopener noreferrer" class="link-hover-target">
+                    プロジェクトを見る ↗
+                </a>
+            </div>
+        )}
+
+        <!-- 前後の実績ナビ -->
+        {(newerProject || olderProject) && (
+            <nav class="work-nav">
+                {newerProject ? (
+                    <a href={`/projects/${newerProject.slug}/`} class="work-nav-item work-nav-newer link-hover-target">
+                        <!-- サムネイル未設定・読み込み失敗時は枠の背景色だけが残る -->
+                        <span class="work-nav-thumb">
+                            {newerProject.thumbnail && (
+                                <img src={newerProject.thumbnail} alt={newerProject.title} loading="lazy" onerror="this.remove()" />
+                            )}
+                        </span>
+                        <span class="work-nav-text">
+                            <span class="work-nav-label">← Newer</span>
+                            <span class="work-nav-title">{newerProject.title}</span>
+                        </span>
+                    </a>
+                ) : <span class="work-nav-spacer" />}
+                {olderProject && (
+                    <a href={`/projects/${olderProject.slug}/`} class="work-nav-item work-nav-older link-hover-target">
+                        <!-- サムネイル未設定・読み込み失敗時は枠の背景色だけが残る -->
+                        <span class="work-nav-thumb">
+                            {olderProject.thumbnail && (
+                                <img src={olderProject.thumbnail} alt={olderProject.title} loading="lazy" onerror="this.remove()" />
+                            )}
+                        </span>
+                        <span class="work-nav-text">
+                            <span class="work-nav-label">Older →</span>
+                            <span class="work-nav-title">{olderProject.title}</span>
+                        </span>
+                    </a>
+                )}
+            </nav>
+        )}
+    </main>
+</body>
+
+</html>

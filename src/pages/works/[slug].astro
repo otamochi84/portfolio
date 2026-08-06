@@ -1,49 +1,47 @@
 ---
-import { getWorks, getPageBlocks } from "../../lib/notion";
+import { getWorkCategories, getProjects, getPageBlocks } from "../../lib/notion";
 import NotionBlocks from "../../components/NotionBlocks.astro";
 
-// 静的パス生成: スラッグが設定されている実績のみ
+// 静的パス生成: 公開状態のカテゴリのみ（getWorkCategoriesが公開・スラッグ有りに絞り込む）
 export async function getStaticPaths() {
-  const works = await getWorks();
-  return works
-    .filter((work) => work.slug)
-    .map((work) => ({
-      params: { slug: work.slug },
-      props: { work },
-    }));
+  const categories = await getWorkCategories();
+  return categories.map((category) => ({
+    params: { slug: category.slug },
+    props: { category },
+  }));
 }
 
 interface Props {
-  work: any;
+  category: any;
 }
 
-const { work } = Astro.props;
+const { category } = Astro.props;
 
-// ページの本文ブロック取得
-const blocks = await getPageBlocks(work.id);
+// カテゴリの本文（旧Serviceの文章などが入る）
+const blocks = await getPageBlocks(category.id);
 
-// 前後の実績ナビ（getWorksは実施時期の降順なので、前=新しい実績・後=古い実績）
-const allWorks = await getWorks();
-const sluggedWorks = allWorks.filter((w) => w.slug);
-const currentIndex = sluggedWorks.findIndex((w) => w.id === work.id);
-const newerWork = currentIndex > 0 ? sluggedWorks[currentIndex - 1] : null;
-const olderWork = currentIndex !== -1 && currentIndex < sluggedWorks.length - 1 ? sluggedWorks[currentIndex + 1] : null;
+// 実績一覧はNotionカテゴリのページにだけ出す。
+// 実績DB（HP_Projects）の案件はすべてNotion関連で、他カテゴリには紐づく案件が無いため
+const isNotionCategory = category.slug === "notion";
+const projects = isNotionCategory
+  ? (await getProjects()).filter((project) => project.slug)
+  : [];
 
 // メタディスクリプション: 概要の先頭120字（改行はスペースに置換）
-const metaDescription = (work.overview || "").substring(0, 120).replace(/\n/g, " ");
+const metaDescription = (category.overview || "").substring(0, 120).replace(/\n/g, " ");
 
-// OGP・canonical用の絶対URL
-const pageUrl = new URL(`/works/${work.slug}/`, Astro.site).href;
-const ogImage = new URL(work.thumbnail, Astro.site).href;
+// OGP・canonical用の絶対URL。画像は未登録なら出さない
+const pageUrl = new URL(`/works/${category.slug}/`, Astro.site).href;
+const ogImage = category.image ? new URL(category.image, Astro.site).href : null;
 
-// 実施時期フォーマット: YYYY.MM (nullなら空文字)
-let dateFormatted = "";
-if (work.date) {
-  const dateObj = new Date(work.date);
+// 実施時期を YYYY.MM 形式に整える（未入力なら空文字）
+const formatDate = (value: string | null) => {
+  if (!value) return "";
+  const dateObj = new Date(value);
   const year = dateObj.getFullYear();
   const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-  dateFormatted = `${year}.${month}`;
-}
+  return `${year}.${month}`;
+};
 ---
 
 <!DOCTYPE html>
@@ -56,17 +54,17 @@ if (work.date) {
     <meta name="theme-color" content="#f8f8f8">
     <meta name="description" content={metaDescription}>
 
-    <title>{work.title} | otamochi portfolio</title>
+    <title>{category.title} | otamochi portfolio</title>
 
     <!-- Favicon -->
     <link rel="icon" href="/favicon.ico" sizes="32x32">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 
     <!-- OGP タグ -->
-    <meta property="og:title" content={`${work.title} | otamochi portfolio`}>
+    <meta property="og:title" content={`${category.title} | otamochi portfolio`}>
     <meta property="og:description" content={metaDescription}>
-    <meta property="og:type" content="article">
-    <meta property="og:image" content={ogImage}>
+    <meta property="og:type" content="website">
+    {ogImage && <meta property="og:image" content={ogImage}>}
     <meta property="og:url" content={pageUrl}>
 
     <!-- canonical -->
@@ -94,20 +92,11 @@ if (work.date) {
         <a href="https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105" target="_blank" rel="noopener noreferrer" class="nav-contact-btn link-hover-target">Contact</a>
     </nav>
 
-    <!-- ヘッダー（実施時期 → 案件名 → カテゴリの順のシンプル構成） -->
+    <!-- ヘッダー（カテゴリ名 → 概要のシンプル構成） -->
     <header class="work-header">
-        {dateFormatted && <p class="work-date">{dateFormatted}</p>}
+        <h1 class="work-title">{category.title}</h1>
 
-        <!-- 案件名 -->
-        <h1 class="work-title">{work.title}</h1>
-
-        <!-- カテゴリ -->
-        <p class="work-category">{work.category}</p>
-
-        <!-- 連携ツール（テキストのみ） -->
-        {work.tools && work.tools.length > 0 && (
-            <p class="work-tools">連携ツール：{work.tools.join(' / ')}</p>
-        )}
+        {category.overview && <p class="category-overview">{category.overview}</p>}
     </header>
 
     <!-- メインコンテンツ -->
@@ -115,37 +104,23 @@ if (work.date) {
         <!-- Notion本文 -->
         <NotionBlocks blocks={blocks} />
 
-        <!-- 外部リンク（あれば） -->
-        {work.externalUrl && (
-            <div class="work-external-link">
-                <a href={work.externalUrl} target="_blank" rel="noopener noreferrer" class="link-hover-target">
-                    プロジェクトを見る ↗
-                </a>
-            </div>
-        )}
-
-        <!-- 前後の実績ナビ -->
-        {(newerWork || olderWork) && (
-            <nav class="work-nav">
-                {newerWork ? (
-                    <a href={`/works/${newerWork.slug}/`} class="work-nav-item work-nav-newer link-hover-target">
-                        <img src={newerWork.thumbnail} alt={newerWork.title} loading="lazy" />
-                        <span class="work-nav-text">
-                            <span class="work-nav-label">← Newer</span>
-                            <span class="work-nav-title">{newerWork.title}</span>
-                        </span>
-                    </a>
-                ) : <span class="work-nav-spacer" />}
-                {olderWork && (
-                    <a href={`/works/${olderWork.slug}/`} class="work-nav-item work-nav-older link-hover-target">
-                        <img src={olderWork.thumbnail} alt={olderWork.title} loading="lazy" />
-                        <span class="work-nav-text">
-                            <span class="work-nav-label">Older →</span>
-                            <span class="work-nav-title">{olderWork.title}</span>
-                        </span>
-                    </a>
-                )}
-            </nav>
+        <!-- 実績一覧（Notionカテゴリのみ） -->
+        {projects.length > 0 && (
+            <section class="category-projects">
+                <h2 class="category-projects-title">Projects</h2>
+                <div class="jrow-list">
+                    {projects.map((project) => (
+                        <a href={`/projects/${project.slug}/`} class="jrow">
+                            <span class="jrow-date">{formatDate(project.date)}</span>
+                            <span class="jrow-title">
+                                {project.title}
+                                {project.category && <span class="jrow-category">{project.category}</span>}
+                            </span>
+                            <span class="jrow-arrow">VIEW ↗</span>
+                        </a>
+                    ))}
+                </div>
+            </section>
         )}
     </main>
 </body>
