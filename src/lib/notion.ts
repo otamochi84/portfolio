@@ -2,12 +2,15 @@ import { Client } from "@notionhq/client";
 import fs from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import {
+  projectsDatabaseId,
+  journalDatabaseId,
+  worksDatabaseId,
+  contentsDatabaseId,
+} from "../config/notion";
 
 // Notion APIクライアント初期化
 const notion = new Client({ auth: import.meta.env.NOTION_API_KEY });
-
-// 実績DB（Notion上の名称は HP_Projects）。環境変数のキー名は既存デプロイと揃えるため据え置き
-const databaseId = import.meta.env.NOTION_DATABASE_ID;
 
 // --- 画像最適化の設定 ---
 // 長辺の上限。各用途の最大表示幅の2倍（Retina想定）を満たす値にしている
@@ -234,7 +237,7 @@ export async function downloadImage(
 export async function getProjects(): Promise<ProjectItem[]> {
   try {
     const response = await notion.databases.query({
-      database_id: databaseId,
+      database_id: projectsDatabaseId,
       filter: {
         property: "公開",
         checkbox: {
@@ -338,8 +341,6 @@ export type WorkCategory = {
  */
 export async function getWorkCategories(): Promise<WorkCategory[]> {
   try {
-    const worksDatabaseId = import.meta.env.NOTION_WORKS_DB_ID;
-
     const response = await notion.databases.query({
       database_id: worksDatabaseId,
       filter: {
@@ -512,8 +513,6 @@ export function pickSiteContent(
  */
 export async function getSiteContents(): Promise<SiteContents> {
   try {
-    const contentsDatabaseId = import.meta.env.NOTION_CONTENTS_DB_ID;
-
     const response = await notion.databases.query({
       database_id: contentsDatabaseId,
       filter: {
@@ -590,8 +589,6 @@ export type BackgroundItem = {
  */
 export async function getBackgroundItems(): Promise<BackgroundItem[]> {
   try {
-    const contentsDatabaseId = import.meta.env.NOTION_CONTENTS_DB_ID;
-
     const response = await notion.databases.query({
       database_id: contentsDatabaseId,
       filter: {
@@ -655,8 +652,6 @@ export type JournalEntry = {
  */
 export async function getJournalEntries(): Promise<JournalEntry[]> {
   try {
-    const journalDatabaseId = import.meta.env.NOTION_JOURNAL_DB_ID;
-
     const response = await notion.databases.query({
       database_id: journalDatabaseId,
       filter: {

@@ -8,7 +8,9 @@ public/notion-images/
 .astro/
 
 # dependencies
-node_modules/
+# 末尾スラッシュを付けない。worktreeではnode_modulesがsymlinkのため、
+# ディレクトリ限定の指定だと無視されず未追跡ファイルとして残る
+node_modules
 
 # logs
 npm-debug.log*
@@ -17,6 +19,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # environment variables
+# 完全一致のため .env.example は無視されない（キー名一覧はgitで管理する）
 .env
 .env.production
 
