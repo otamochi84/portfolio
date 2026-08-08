@@ -5,29 +5,29 @@ import NotionBlocks from "../../components/NotionBlocks.astro";
 // 静的パス生成: スラッグが設定されている実績のみ
 export async function getStaticPaths() {
   const projects = await getProjects();
-  return projects
-    .filter((project) => project.slug)
-    .map((project) => ({
-      params: { slug: project.slug },
-      props: { project },
-    }));
+  // スラッグ付きのみを対象にし、前後ナビ（getProjectsは実施時期の降順なので、前=新しい実績・後=古い実績）もここで解決する。
+  // ページ側で解決するとページ数ぶん getProjects() を呼ぶことになるため
+  const sluggedProjects = projects.filter((project) => project.slug);
+  return sluggedProjects.map((project, index) => ({
+    params: { slug: project.slug },
+    props: {
+      project,
+      newerProject: index > 0 ? sluggedProjects[index - 1] : null,
+      olderProject: index < sluggedProjects.length - 1 ? sluggedProjects[index + 1] : null,
+    },
+  }));
 }
 
 interface Props {
   project: any;
+  newerProject: any;
+  olderProject: any;
 }
 
-const { project } = Astro.props;
+const { project, newerProject, olderProject } = Astro.props;
 
 // ページの本文ブロック取得
 const blocks = await getPageBlocks(project.id);
-
-// 前後の実績ナビ（getProjectsは実施時期の降順なので、前=新しい実績・後=古い実績）
-const allProjects = await getProjects();
-const sluggedProjects = allProjects.filter((p) => p.slug);
-const currentIndex = sluggedProjects.findIndex((p) => p.id === project.id);
-const newerProject = currentIndex > 0 ? sluggedProjects[currentIndex - 1] : null;
-const olderProject = currentIndex !== -1 && currentIndex < sluggedProjects.length - 1 ? sluggedProjects[currentIndex + 1] : null;
 
 // メタディスクリプション: 概要の先頭120字（改行はスペースに置換）
 const metaDescription = (project.overview || "").substring(0, 120).replace(/\n/g, " ");
@@ -91,8 +91,8 @@ if (project.date) {
 
     <!-- フローティングナビゲーション -->
     <nav class="floating-nav">
-        <a href="/#works" class="nav-brand link-hover-target">← Home</a>
-        <a href="https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105" target="_blank" rel="noopener noreferrer" class="nav-contact-btn link-hover-target">Contact</a>
+        <a href="/#works" class="nav-brand">← Home</a>
+        <a href="https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105" target="_blank" rel="noopener noreferrer" class="nav-contact-btn">Contact</a>
     </nav>
 
     <!-- ヘッダー（実施時期 → 案件名 → カテゴリの順のシンプル構成） -->
@@ -119,7 +119,7 @@ if (project.date) {
         <!-- 外部リンク（あれば） -->
         {project.externalUrl && (
             <div class="work-external-link">
-                <a href={project.externalUrl} target="_blank" rel="noopener noreferrer" class="link-hover-target">
+                <a href={project.externalUrl} target="_blank" rel="noopener noreferrer">
                     プロジェクトを見る ↗
                 </a>
             </div>
@@ -129,7 +129,7 @@ if (project.date) {
         {(newerProject || olderProject) && (
             <nav class="work-nav">
                 {newerProject ? (
-                    <a href={`/projects/${newerProject.slug}/`} class="work-nav-item work-nav-newer link-hover-target">
+                    <a href={`/projects/${newerProject.slug}/`} class="work-nav-item work-nav-newer">
                         <!-- サムネイル未設定・読み込み失敗時は枠の背景色だけが残る -->
                         <span class="work-nav-thumb">
                             {newerProject.thumbnail && (
@@ -143,7 +143,7 @@ if (project.date) {
                     </a>
                 ) : <span class="work-nav-spacer" />}
                 {olderProject && (
-                    <a href={`/projects/${olderProject.slug}/`} class="work-nav-item work-nav-older link-hover-target">
+                    <a href={`/projects/${olderProject.slug}/`} class="work-nav-item work-nav-older">
                         <!-- サムネイル未設定・読み込み失敗時は枠の背景色だけが残る -->
                         <span class="work-nav-thumb">
                             {olderProject.thumbnail && (

@@ -151,18 +151,23 @@ function renderBlocks(blockList: any[]): string {
       const caption = imageBlock.caption || [];
       const captionText = renderRichText(caption);
 
-      // localImagePath が設定されていればそれを使用、なければ元のURLを使用
+      // localImagePath が設定されていればそれを使用。
+      // 無い場合のフォールバックは external.url（ユーザーが貼った外部URL）だけに限る。
+      // file.url はNotionの署名付きURLで約1時間で失効し、必ず壊れるリンクになるため使わない
       let imageSrc = block.localImagePath;
       if (!imageSrc) {
-        imageSrc = imageBlock.file?.url || imageBlock.external?.url || "";
+        imageSrc = imageBlock.external?.url || "";
       }
 
-      const escapedSrc = escapeHtml(imageSrc);
+      // 表示できるURLが無いときは <img src=""> を出さず、画像ごと省く
+      if (imageSrc) {
+        const escapedSrc = escapeHtml(imageSrc);
 
-      if (captionText) {
-        html += `<figure><img src="${escapedSrc}" alt="" loading="lazy"><figcaption>${captionText}</figcaption></figure>`;
-      } else {
-        html += `<figure><img src="${escapedSrc}" alt="" loading="lazy"></figure>`;
+        if (captionText) {
+          html += `<figure><img src="${escapedSrc}" alt="" loading="lazy"><figcaption>${captionText}</figcaption></figure>`;
+        } else {
+          html += `<figure><img src="${escapedSrc}" alt="" loading="lazy"></figure>`;
+        }
       }
     } else if (blockType === "quote") {
       const quoteBlock = block.quote || {};

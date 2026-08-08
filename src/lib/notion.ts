@@ -184,7 +184,10 @@ export async function fetchOgpData(url: string): Promise<OgpData | null> {
  * 画像をダウンロードし、最適化してローカル化する関数
  * @param url ダウンロード対象のURL
  * @param fileName ファイル名（拡張子含む。WebP変換時は拡張子が .webp に変わる）
- * @returns ローカルパス（/notion-images/{fileName}）またはエラー時は元のurl
+ * @returns ローカルパス（/notion-images/{fileName}）。エラー時は空文字
+ *
+ * エラー時に元のurlを返さないのは、NotionのファイルURLが約1時間で失効し、
+ * 静的サイトでは「必ず後で壊れるリンク」になるため。画像を出さないほうがマシという判断
  */
 export async function downloadImage(
   url: string,
@@ -199,8 +202,12 @@ export async function downloadImage(
 
     const imgRes = await fetch(url);
     if (!imgRes.ok) {
-      console.error("Failed to fetch image:", imgRes.statusText);
-      return url; // フォールバック
+      console.error(
+        "画像のローカル化に失敗したので表示しません (fetch失敗):",
+        imgRes.statusText,
+        fileName
+      );
+      return "";
     }
 
     const arrayBuffer = await imgRes.arrayBuffer();
@@ -225,8 +232,8 @@ export async function downloadImage(
 
     return `/notion-images/${outputFileName}`;
   } catch (e) {
-    console.error("Image download error:", e);
-    return url; // フォールバック
+    console.error("画像のローカル化に失敗したので表示しません:", fileName, e);
+    return "";
   }
 }
 
@@ -294,8 +301,9 @@ export async function getProjects(): Promise<ProjectItem[]> {
               const fileName = `${page.id}${ext}`;
               thumbnail = await downloadImage(fileUrl, fileName);
             } catch (e) {
-              console.error("Thumbnail processing error:", e);
-              thumbnail = fileUrl; // フォールバック
+              // NotionのファイルURLは失効するのでフォールバックに使わない（空文字＝非表示）
+              console.error("サムネイルのローカル化に失敗したので表示しません:", page.id, e);
+              thumbnail = "";
             }
           }
         }
@@ -393,8 +401,9 @@ export async function getWorkCategories(): Promise<WorkCategory[]> {
 
             image = await downloadImage(fileUrl, `${page.id}${ext}`);
           } catch (e) {
-            console.error("WorkCategory image processing error:", e);
-            image = fileUrl; // フォールバック
+            // NotionのファイルURLは失効するのでフォールバックに使わない（空文字＝非表示）
+            console.error("カテゴリ画像のローカル化に失敗したので表示しません:", page.id, e);
+            image = "";
           }
         }
       }
@@ -446,8 +455,9 @@ export async function getPageBlocks(pageId: string): Promise<NotionBlock[]> {
               const localPath = await downloadImage(fileUrl, fileName);
               blockWithId.localImagePath = localPath;
             } catch (e) {
-              console.error("Image block processing error:", e);
-              // localImagePath を設定しない場合は元URLを使用
+              // localImagePath が未設定のときの扱いは NotionBlocks 側に任せる
+              // （外部URLならそれを使い、NotionのファイルURLなら失効するので表示しない）
+              console.error("本文画像のローカル化に失敗しました:", blockWithId.id, e);
             }
           }
         }
@@ -554,10 +564,12 @@ export async function getSiteContents(): Promise<SiteContents> {
           if (!ext) ext = ".png"; // デフォルト
 
           const fileName = `${page.id}-${index}${ext}`;
-          images.push(await downloadImage(fileUrl, fileName));
+          // ローカル化に失敗すると空文字が返る。<img src=""> を出さないよう、その場合はpushしない
+          const localPath = await downloadImage(fileUrl, fileName);
+          if (localPath) images.push(localPath);
         } catch (e) {
-          console.error("Site content image processing error:", e);
-          images.push(fileUrl); // フォールバック
+          // NotionのファイルURLは失効するのでフォールバックに使わない（pushせず欠番にする）
+          console.error("サイト内画像のローカル化に失敗したので表示しません:", page.id, index, e);
         }
       }
 

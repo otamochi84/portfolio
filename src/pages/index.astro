@@ -275,7 +275,7 @@ const formatDate = (value) => {
         </div>
         <div class="wcard-list">
             {workCategories.map((category) => (
-                <a href={`/works/${category.slug}/`} class="wcard link-hover-target">
+                <a href={`/works/${category.slug}/`} class="wcard">
                     <!-- 画像はNotionから取得。未登録のときはプレースホルダ（背景色）のまま表示する -->
                     <div class="wcard-image">
                         {category.image && (
