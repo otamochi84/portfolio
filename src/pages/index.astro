@@ -64,6 +64,25 @@ const aboutJpLines = aboutJpText ? aboutJpText.split("\n") : aboutProfile.jp;
 const notionBackgroundItems = await getBackgroundItems();
 const backgroundItems = notionBackgroundItems.length > 0 ? notionBackgroundItems : backgroundFallback;
 
+// Worksカード画像の表示幅（CSS実測ベース）。ブラウザにsrcsetから適切な1枚を選ばせるために渡す
+//   768px以上 : .sec の左右padding と .wcard-list の3列・gap 2rem、.wcard の padding 0.75rem を差し引いた値
+//   767px以下 : 1列なので画面幅から padding 24px×2 と .wcard の padding を差し引いた値
+const wcardSizes = [
+    "(max-width: 767px) calc(100vw - 72px)",
+    "(max-width: 1024px) calc((100vw - 160px) / 3 - 24px)",
+    "calc((100vw - 256px) / 3 - 24px)"
+].join(", ");
+
+/**
+ * srcset属性の値を組み立てる
+ * @param sources 画像候補（widthは実際に出力されたpx）
+ * @returns "パス 幅w, ..." 形式の文字列。候補が1つ以下ならundefined（srcsetを出さない）
+ */
+function buildSrcset(sources: { src: string; width: number }[]): string | undefined {
+    if (sources.length < 2) return undefined;
+    return sources.map((source) => `${source.src} ${source.width}w`).join(", ");
+}
+
 // サイトの基準URL（OGP・canonicalに使用）
 const siteUrl = Astro.site?.href ?? "https://otamochi.com/";
 
@@ -279,7 +298,14 @@ const formatDate = (value) => {
                     <!-- 画像はNotionから取得。未登録のときはプレースホルダ（背景色）のまま表示する -->
                     <div class="wcard-image">
                         {category.image && (
-                            <img src={category.image} alt={category.title} loading="lazy" />
+                            <!-- srcのフルサイズ版はsrcset非対応環境向けのフォールバック -->
+                            <img
+                                src={category.image}
+                                srcset={buildSrcset(category.imageSources)}
+                                sizes={buildSrcset(category.imageSources) ? wcardSizes : undefined}
+                                alt={category.title}
+                                loading="lazy"
+                            />
                         )}
                     </div>
                     <p class="wcard-title">{category.title}</p>

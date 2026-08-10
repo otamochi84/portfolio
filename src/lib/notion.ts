@@ -16,8 +16,20 @@ const notion = new Client({ auth: import.meta.env.NOTION_API_KEY });
 // 長辺の上限。各用途の最大表示幅の2倍（Retina想定）を満たす値にしている
 //   キービジュアル(.hero-kv-wrap)      : 880px  → 1760px
 //   スナップ写真(.about-grid 右カラム) : 928px  → 1856px ← 最大
-//   Worksカテゴリカード(.wcard-image)  : 3列なので実質600px前後 → 1200px
+//   Worksカテゴリカード(.wcard-image)  : 下の cardImageSizes でsrcset対応するため、ここでは上限のみ効く
 const maxImageSize = 1920;
+
+// Worksカードのsrcset用に追加生成する縮小版の長辺（幅の昇順で持つ）。
+//   1200px : PCの3列表示（カード実表示幅は最大でも約554px）のRetina相当
+//    800px : モバイル1列（表示幅約318px）のRetina相当。これが無いとモバイルでも1200版が選ばれてしまう
+// アップされた画像そのもの（フルサイズ版）は縮小せず残す方針は変えない
+const cardImageSizes = [800, 1200];
+
+// 縮小版を作るかどうかのしきい値。
+// 縮小後の幅がフルサイズ幅のこの割合以上なら作らない。
+// 例: 1222pxの画像に1200px版を作っても容量は5%しか減らず、
+// ファイルを1枚増やすコストに見合う削減量がないため
+const cardImageShrinkRatio = 0.9;
 
 // WebPの品質。写真の劣化が目視でわからない範囲に収めるため高めに取る
 const webpQuality = 88;
@@ -181,6 +193,30 @@ export async function fetchOgpData(url: string): Promise<OgpData | null> {
 }
 
 /**
+ * 画像バッファを public（本番ビルド時は dist にも）へ保存する
+ * @param fileName 保存するファイル名（拡張子含む）
+ * @param buffer 保存する画像バッファ
+ * @returns ローカルパス（/notion-images/{fileName}）
+ */
+async function saveImageFile(
+  fileName: string,
+  buffer: Buffer
+): Promise<string> {
+  const publicImagesDir = path.join(process.cwd(), "public", "notion-images");
+  await fs.mkdir(publicImagesDir, { recursive: true });
+  await fs.writeFile(path.join(publicImagesDir, fileName), buffer);
+
+  // 本番ビルド時は dist フォルダにも保存
+  if (import.meta.env.PROD) {
+    const distImagesDir = path.join(process.cwd(), "dist", "notion-images");
+    await fs.mkdir(distImagesDir, { recursive: true });
+    await fs.writeFile(path.join(distImagesDir, fileName), buffer);
+  }
+
+  return `/notion-images/${fileName}`;
+}
+
+/**
  * 画像をダウンロードし、最適化してローカル化する関数
  * @param url ダウンロード対象のURL
  * @param fileName ファイル名（拡張子含む。WebP変換時は拡張子が .webp に変わる）
@@ -194,12 +230,6 @@ export async function downloadImage(
   fileName: string
 ): Promise<string> {
   try {
-    const isProd = import.meta.env.PROD;
-    const publicImagesDir = path.join(process.cwd(), "public", "notion-images");
-
-    // ディレクトリを作成
-    await fs.mkdir(publicImagesDir, { recursive: true });
-
     const imgRes = await fetch(url);
     if (!imgRes.ok) {
       console.error(
@@ -218,19 +248,7 @@ export async function downloadImage(
       fileName
     );
 
-    // public フォルダに保存
-    const filePathPublic = path.join(publicImagesDir, outputFileName);
-    await fs.writeFile(filePathPublic, buffer);
-
-    // 本番ビルド時は dist フォルダにも保存
-    if (isProd) {
-      const distImagesDir = path.join(process.cwd(), "dist", "notion-images");
-      await fs.mkdir(distImagesDir, { recursive: true });
-      const filePathDist = path.join(distImagesDir, outputFileName);
-      await fs.writeFile(filePathDist, buffer);
-    }
-
-    return `/notion-images/${outputFileName}`;
+    return await saveImageFile(outputFileName, buffer);
   } catch (e) {
     console.error("画像のローカル化に失敗したので表示しません:", fileName, e);
     return "";
@@ -330,6 +348,9 @@ export async function getProjects(): Promise<ProjectItem[]> {
   }
 }
 
+// srcset用の画像候補1件分。widthは「実際に出力されたpx」
+export type ImageSource = { src: string; width: number };
+
 // Worksカテゴリ（HP_Works）1件分の型定義
 export type WorkCategory = {
   id: string;
@@ -337,7 +358,97 @@ export type WorkCategory = {
   title: string;
   overview: string;
   image: string; // ローカルパス(/notion-images/...)。画像が未登録なら空文字
+  // カード画像。srcset用に幅の異なる候補を幅の昇順で持つ（候補が1つ以下ならsrcsetは出さない）
+  imageSources: ImageSource[];
 };
+
+/**
+ * Worksカード用の画像をローカル化する。
+ * フルサイズ版（既存どおり）に加えて、srcset用の縮小版（cardImageSizes）を生成する
+ *
+ * srcsetのw値には「要求した幅」ではなく sharp が返した実際の出力幅を入れる。
+ * withoutEnlargement により元画像が要求幅より小さいと縮小されず元の幅のまま返るため、
+ * 要求値を書くとブラウザが解像度を誤認して拡大表示し、かえって粗くなるため
+ *
+ * @param url ダウンロード対象のURL
+ * @param fileName ファイル名（拡張子含む）
+ * @returns フルサイズのローカルパスとsrcset用の候補配列（ローカル化に失敗したら空文字・空配列）
+ */
+async function downloadCardImage(
+  url: string,
+  fileName: string
+): Promise<{ image: string; imageSources: ImageSource[] }> {
+  const emptyResult = { image: "", imageSources: [] };
+
+  try {
+    const imgRes = await fetch(url);
+    if (!imgRes.ok) {
+      console.error(
+        "画像のローカル化に失敗したので表示しません (fetch失敗):",
+        imgRes.statusText,
+        fileName
+      );
+      return emptyResult;
+    }
+
+    const originalBuffer = Buffer.from(await imgRes.arrayBuffer());
+
+    // フルサイズ版は他の画像とまったく同じ扱いで保存する
+    const { buffer: fullBuffer, fileName: fullFileName } = await optimizeImage(
+      originalBuffer,
+      fileName
+    );
+    const image = await saveImageFile(fullFileName, fullBuffer);
+    const fullWidth = (await sharp(fullBuffer).metadata()).width;
+
+    // 幅が取れない形式（SVG等）はsrcsetを組めないのでフルサイズ版だけ返す
+    if (!fullWidth) return { image, imageSources: [] };
+
+    const imageSources: ImageSource[] = [{ src: image, width: fullWidth }];
+    // 同じ幅の候補が並ぶとブラウザが選べないため、採用済みの幅を控えておく
+    const usedWidths = new Set<number>([fullWidth]);
+
+    for (const size of cardImageSizes) {
+      // 縮小版の生成条件は optimizeImage と揃える（長辺基準・拡大しない）
+      const resizedBuffer = await sharp(originalBuffer)
+        .resize({
+          width: size,
+          height: size,
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .webp({ quality: webpQuality })
+        .toBuffer();
+      const resizedWidth = (await sharp(resizedBuffer).metadata()).width;
+
+      // 幅が取れない・ほとんど縮まらない（＝作る価値がない）ものは捨てる。
+      // 元画像が小さくて縮小されなかったケースもここで弾かれる
+      if (!resizedWidth || resizedWidth >= fullWidth * cardImageShrinkRatio) {
+        continue;
+      }
+
+      // 縮小版どうしで幅が並んだ場合も、重複した候補は作らない
+      if (usedWidths.has(resizedWidth)) continue;
+
+      // ファイル名は要求サイズ。縦長画像では実出力幅と一致しないが、
+      // ブラウザが見るのはsrcsetのw値（＝実出力幅）なので表示には影響しない
+      const resizedFileName = `${fileName.replace(/\.[^.]+$/, "")}-${size}.webp`;
+      const resizedPath = await saveImageFile(resizedFileName, resizedBuffer);
+
+      imageSources.push({ src: resizedPath, width: resizedWidth });
+      usedWidths.add(resizedWidth);
+    }
+
+    // ブラウザが読みやすいよう幅の昇順に並べる
+    imageSources.sort((a, b) => a.width - b.width);
+
+    return { image, imageSources };
+  } catch (e) {
+    // NotionのファイルURLは失効するのでフォールバックに使わない（空文字＝非表示）
+    console.error("画像のローカル化に失敗したので表示しません:", fileName, e);
+    return emptyResult;
+  }
+}
 
 /**
  * 公開状態のWorksカテゴリを取得
@@ -388,7 +499,9 @@ export async function getWorkCategories(): Promise<WorkCategory[]> {
 
       // NotionのファイルURLは期限切れするため、ビルド時にローカル化する。
       // 画像は1枚だけ使う。未登録のときは空文字のままにし、表示側のプレースホルダに任せる
+      // （カードは表示幅に対して画像が過大になりやすいので、srcset用の縮小版も併せて作る）
       let image = "";
+      let imageSources: ImageSource[] = [];
       const imageFile = props["画像"]?.files?.[0];
       if (imageFile) {
         const fileUrl = imageFile.file?.url || imageFile.external?.url;
@@ -399,16 +512,19 @@ export async function getWorkCategories(): Promise<WorkCategory[]> {
             let ext = path.extname(urlObj.pathname);
             if (!ext) ext = ".png"; // デフォルト
 
-            image = await downloadImage(fileUrl, `${page.id}${ext}`);
+            const result = await downloadCardImage(fileUrl, `${page.id}${ext}`);
+            image = result.image;
+            imageSources = result.imageSources;
           } catch (e) {
             // NotionのファイルURLは失効するのでフォールバックに使わない（空文字＝非表示）
             console.error("カテゴリ画像のローカル化に失敗したので表示しません:", page.id, e);
             image = "";
+            imageSources = [];
           }
         }
       }
 
-      categories.push({ id: page.id, slug, title, overview, image });
+      categories.push({ id: page.id, slug, title, overview, image, imageSources });
     }
 
     return categories;
