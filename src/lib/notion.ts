@@ -192,6 +192,183 @@ export async function fetchOgpData(url: string): Promise<OgpData | null> {
   }
 }
 
+// --- 画像の差分ダウンロード（マニフェスト） ---
+// ビルドのたびに全画像を落とし直すのは無駄なので、Notionの last_edited_time を
+// マニフェストに記録しておき、前回から変わっていない画像はダウンロードごとスキップする。
+// ファイルのmtimeを見ないのは、時計ずれやファイル操作で簡単に壊れる情報だから。
+//
+// キャッシュを捨てて全画像を落とし直したいときは public/notion-images/ を手で削除する
+// （マニフェストも同じフォルダにあるので一緒に消える）。
+// public/notion-images/ は .gitignore 済みなので、本番（Cloudflare Pages）は
+// 毎回クリーンな状態から始まり初回は全ダウンロードになる。効くのはローカルの反復ビルド
+
+const publicImagesDir = path.join(process.cwd(), "public", "notion-images");
+const distImagesDir = path.join(process.cwd(), "dist", "notion-images");
+const manifestPath = path.join(publicImagesDir, ".image-manifest.json");
+
+// マニフェスト1件分。1回のダウンロードで作った出力ファイルをまとめて持つ
+// （Worksカード画像は1回のfetchからフルサイズ版と縮小版が生成されるため）
+type ManifestEntry = {
+  lastEditedTime: string;
+  // 出力ファイル。先頭は必ずフルサイズ版。
+  // width はsrcsetのw値を復元するための実出力幅（不要・不明なものは null）
+  files: { name: string; width: number | null }[];
+};
+
+// キーはダウンロード要求時のファイル名（例: {pageId}.png）。
+// 出力名は最適化で拡張子が変わりうるため、キーには使えない
+type ImageManifest = Record<string, ManifestEntry>;
+
+// 1ビルド中の読み込みは1回だけ。以降はこのオブジェクトを共有して更新する
+let manifestPromise: Promise<ImageManifest> | null = null;
+
+// 書き込みが並列に重なるとJSONが壊れるため、直列につないで実行する
+let manifestWriteChain: Promise<void> = Promise.resolve();
+
+/**
+ * マニフェストを読み込む（1ビルド中は同じオブジェクトを使い回す）
+ * @returns マニフェストの中身（未作成・壊れている場合は空オブジェクト）
+ */
+function loadManifest(): Promise<ImageManifest> {
+  if (!manifestPromise) {
+    manifestPromise = (async () => {
+      try {
+        const parsed = JSON.parse(await fs.readFile(manifestPath, "utf-8"));
+
+        // 配列やnullが入っていたら壊れているとみなす
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          return {};
+        }
+        return parsed as ImageManifest;
+      } catch {
+        // 未作成・壊れている場合は「キャッシュ無し」＝全ダウンロードにフォールバックする
+        return {};
+      }
+    })();
+  }
+  return manifestPromise;
+}
+
+/**
+ * 現在のマニフェストをファイルへ書き戻す
+ */
+function saveManifest(): Promise<void> {
+  manifestWriteChain = manifestWriteChain.then(async () => {
+    const manifest = await loadManifest();
+
+    // ビルドごとの並列実行でキー順が揺れないよう、常に名前順で書き出す
+    const sorted: ImageManifest = {};
+    for (const key of Object.keys(manifest).sort()) {
+      sorted[key] = manifest[key];
+    }
+
+    try {
+      await fs.mkdir(publicImagesDir, { recursive: true });
+      await fs.writeFile(manifestPath, JSON.stringify(sorted, null, 2));
+    } catch (e) {
+      // マニフェストが書けなくても画像自体は出力できているのでビルドは止めない
+      console.error("画像マニフェストの保存に失敗しました:", e);
+    }
+  });
+  return manifestWriteChain;
+}
+
+/**
+ * ダウンロード結果をマニフェストに記録する
+ * @param cacheKey ダウンロード要求時のファイル名
+ * @param lastEditedTime Notionの last_edited_time（取得できなければ記録しない）
+ * @param files 生成した出力ファイル（先頭がフルサイズ版）
+ */
+async function recordManifestEntry(
+  cacheKey: string,
+  lastEditedTime: string | undefined,
+  files: ManifestEntry["files"]
+): Promise<void> {
+  // 更新時刻が取れない画像は次回の判定ができないので記録しない（毎回落とし直す）
+  if (!lastEditedTime) return;
+
+  const manifest = await loadManifest();
+  manifest[cacheKey] = { lastEditedTime, files };
+  await saveManifest();
+}
+
+// dist側の準備は1ビルド1回だけでよいので結果を使い回す
+let distImagesDirPromise: Promise<void> | null = null;
+
+/**
+ * dist/notion-images を書き込める状態にする
+ *
+ * Astroは public を dist へコピーしてから各ページをレンダリングするため、
+ * 2回目以降のローカルビルドでは前回のマニフェストまで dist に運ばれてしまう。
+ * マニフェストはビルド用のキャッシュであって配信物ではないので取り除く
+ */
+function prepareDistImagesDir(): Promise<void> {
+  if (!distImagesDirPromise) {
+    distImagesDirPromise = (async () => {
+      await fs.mkdir(distImagesDir, { recursive: true });
+      await fs.rm(path.join(distImagesDir, ".image-manifest.json"), {
+        force: true,
+      });
+    })();
+  }
+  return distImagesDirPromise;
+}
+
+/**
+ * 画像1枚を public から dist へコピーする（本番ビルド時のみ）
+ * @param fileName public/notion-images 配下のファイル名
+ */
+async function copyImageToDist(fileName: string): Promise<void> {
+  if (!import.meta.env.PROD) return;
+
+  await prepareDistImagesDir();
+  await fs.copyFile(
+    path.join(publicImagesDir, fileName),
+    path.join(distImagesDir, fileName)
+  );
+}
+
+/**
+ * マニフェストと突き合わせ、前回のダウンロード結果を再利用できるか判定する
+ *
+ * last_edited_time はページ（ブロック）のどこを編集しても更新されるため、
+ * タイトルだけ直した場合でも画像を落とし直すことになる。
+ * 「必要以上に落とす」ことはあっても「必要なのに落とさない」ことは起きない安全側なので許容する
+ *
+ * @param cacheKey ダウンロード要求時のファイル名
+ * @param lastEditedTime 今回のNotionの last_edited_time
+ * @returns 再利用できるならマニフェストの記録、できないなら null
+ */
+async function reuseDownloadedImage(
+  cacheKey: string,
+  lastEditedTime: string | undefined
+): Promise<ManifestEntry | null> {
+  if (!lastEditedTime) return null;
+
+  const manifest = await loadManifest();
+  const entry = manifest[cacheKey];
+
+  // 記録が無い・更新時刻が変わった・記録が壊れている場合は通常どおりダウンロードする
+  if (!entry || entry.lastEditedTime !== lastEditedTime) return null;
+  if (!Array.isArray(entry.files) || entry.files.length === 0) return null;
+
+  try {
+    for (const file of entry.files) {
+      // 記録があっても実ファイルが消えていれば再利用できない
+      await fs.access(path.join(publicImagesDir, file.name));
+
+      // dist へのコピーは自前で行う。
+      // Astroが public を dist へコピーするタイミングに依存させないため
+      // （ダウンロードしないのでネットワークは使わず、ローカルコピーだけで済む）
+      await copyImageToDist(file.name);
+    }
+  } catch {
+    return null;
+  }
+
+  return entry;
+}
+
 /**
  * 画像バッファを public（本番ビルド時は dist にも）へ保存する
  * @param fileName 保存するファイル名（拡張子含む）
@@ -202,14 +379,12 @@ async function saveImageFile(
   fileName: string,
   buffer: Buffer
 ): Promise<string> {
-  const publicImagesDir = path.join(process.cwd(), "public", "notion-images");
   await fs.mkdir(publicImagesDir, { recursive: true });
   await fs.writeFile(path.join(publicImagesDir, fileName), buffer);
 
   // 本番ビルド時は dist フォルダにも保存
   if (import.meta.env.PROD) {
-    const distImagesDir = path.join(process.cwd(), "dist", "notion-images");
-    await fs.mkdir(distImagesDir, { recursive: true });
+    await prepareDistImagesDir();
     await fs.writeFile(path.join(distImagesDir, fileName), buffer);
   }
 
@@ -220,6 +395,7 @@ async function saveImageFile(
  * 画像をダウンロードし、最適化してローカル化する関数
  * @param url ダウンロード対象のURL
  * @param fileName ファイル名（拡張子含む。WebP変換時は拡張子が .webp に変わる）
+ * @param lastEditedTime Notionの last_edited_time（渡すと差分ダウンロードが効く）
  * @returns ローカルパス（/notion-images/{fileName}）。エラー時は空文字
  *
  * エラー時に元のurlを返さないのは、NotionのファイルURLが約1時間で失効し、
@@ -227,8 +403,13 @@ async function saveImageFile(
  */
 export async function downloadImage(
   url: string,
-  fileName: string
+  fileName: string,
+  lastEditedTime?: string
 ): Promise<string> {
+  // 前回から更新されていなければ、ダウンロードも再エンコードもせず前回の出力を使う
+  const cached = await reuseDownloadedImage(fileName, lastEditedTime);
+  if (cached) return `/notion-images/${cached.files[0].name}`;
+
   try {
     const imgRes = await fetch(url);
     if (!imgRes.ok) {
@@ -248,7 +429,12 @@ export async function downloadImage(
       fileName
     );
 
-    return await saveImageFile(outputFileName, buffer);
+    const localPath = await saveImageFile(outputFileName, buffer);
+    await recordManifestEntry(fileName, lastEditedTime, [
+      { name: outputFileName, width: null },
+    ]);
+
+    return localPath;
   } catch (e) {
     console.error("画像のローカル化に失敗したので表示しません:", fileName, e);
     return "";
@@ -317,7 +503,11 @@ export async function getProjects(): Promise<ProjectItem[]> {
               if (!ext) ext = ".png"; // デフォルト
 
               const fileName = `${page.id}${ext}`;
-              thumbnail = await downloadImage(fileUrl, fileName);
+              thumbnail = await downloadImage(
+                fileUrl,
+                fileName,
+                page.last_edited_time
+              );
             } catch (e) {
               // NotionのファイルURLは失効するのでフォールバックに使わない（空文字＝非表示）
               console.error("サムネイルのローカル化に失敗したので表示しません:", page.id, e);
@@ -372,13 +562,32 @@ export type WorkCategory = {
  *
  * @param url ダウンロード対象のURL
  * @param fileName ファイル名（拡張子含む）
+ * @param lastEditedTime Notionの last_edited_time（渡すと差分ダウンロードが効く）
  * @returns フルサイズのローカルパスとsrcset用の候補配列（ローカル化に失敗したら空文字・空配列）
  */
 async function downloadCardImage(
   url: string,
-  fileName: string
+  fileName: string,
+  lastEditedTime?: string
 ): Promise<{ image: string; imageSources: ImageSource[] }> {
   const emptyResult = { image: "", imageSources: [] };
+
+  // 前回から更新されていなければ、フルサイズ版・縮小版をまとめてスキップする。
+  // 1回のfetchから作る一式なので、判定も記録もこの単位で行う。
+  // srcsetのw値は「実出力幅」でなければならないため、マニフェストに記録した幅から復元する
+  const cached = await reuseDownloadedImage(fileName, lastEditedTime);
+  if (cached) {
+    return {
+      image: `/notion-images/${cached.files[0].name}`,
+      imageSources: cached.files
+        .filter((file) => typeof file.width === "number")
+        .map((file) => ({
+          src: `/notion-images/${file.name}`,
+          width: file.width as number,
+        }))
+        .sort((a, b) => a.width - b.width),
+    };
+  }
 
   try {
     const imgRes = await fetch(url);
@@ -401,8 +610,16 @@ async function downloadCardImage(
     const image = await saveImageFile(fullFileName, fullBuffer);
     const fullWidth = (await sharp(fullBuffer).metadata()).width;
 
+    // マニフェストに記録する出力ファイル一覧（先頭はフルサイズ版）
+    const manifestFiles: ManifestEntry["files"] = [
+      { name: fullFileName, width: fullWidth ?? null },
+    ];
+
     // 幅が取れない形式（SVG等）はsrcsetを組めないのでフルサイズ版だけ返す
-    if (!fullWidth) return { image, imageSources: [] };
+    if (!fullWidth) {
+      await recordManifestEntry(fileName, lastEditedTime, manifestFiles);
+      return { image, imageSources: [] };
+    }
 
     const imageSources: ImageSource[] = [{ src: image, width: fullWidth }];
     // 同じ幅の候補が並ぶとブラウザが選べないため、採用済みの幅を控えておく
@@ -436,11 +653,14 @@ async function downloadCardImage(
       const resizedPath = await saveImageFile(resizedFileName, resizedBuffer);
 
       imageSources.push({ src: resizedPath, width: resizedWidth });
+      manifestFiles.push({ name: resizedFileName, width: resizedWidth });
       usedWidths.add(resizedWidth);
     }
 
     // ブラウザが読みやすいよう幅の昇順に並べる
     imageSources.sort((a, b) => a.width - b.width);
+
+    await recordManifestEntry(fileName, lastEditedTime, manifestFiles);
 
     return { image, imageSources };
   } catch (e) {
@@ -512,7 +732,11 @@ export async function getWorkCategories(): Promise<WorkCategory[]> {
             let ext = path.extname(urlObj.pathname);
             if (!ext) ext = ".png"; // デフォルト
 
-            const result = await downloadCardImage(fileUrl, `${page.id}${ext}`);
+            const result = await downloadCardImage(
+              fileUrl,
+              `${page.id}${ext}`,
+              page.last_edited_time
+            );
             image = result.image;
             imageSources = result.imageSources;
           } catch (e) {
@@ -568,7 +792,12 @@ export async function getPageBlocks(pageId: string): Promise<NotionBlock[]> {
               if (!ext) ext = ".png";
 
               const fileName = `${blockWithId.id}${ext}`;
-              const localPath = await downloadImage(fileUrl, fileName);
+              // 本文画像は last_edited_time をブロック単位で持っているのでそれを使う
+              const localPath = await downloadImage(
+                fileUrl,
+                fileName,
+                blockWithId.last_edited_time
+              );
               blockWithId.localImagePath = localPath;
             } catch (e) {
               // localImagePath が未設定のときの扱いは NotionBlocks 側に任せる
@@ -679,9 +908,14 @@ export async function getSiteContents(): Promise<SiteContents> {
           let ext = path.extname(urlObj.pathname);
           if (!ext) ext = ".png"; // デフォルト
 
+          // 1ページに複数枚あるため、差分判定はファイル名（＝index込み）単位で行う
           const fileName = `${page.id}-${index}${ext}`;
           // ローカル化に失敗すると空文字が返る。<img src=""> を出さないよう、その場合はpushしない
-          const localPath = await downloadImage(fileUrl, fileName);
+          const localPath = await downloadImage(
+            fileUrl,
+            fileName,
+            page.last_edited_time
+          );
           if (localPath) images.push(localPath);
         } catch (e) {
           // NotionのファイルURLは失効するのでフォールバックに使わない（pushせず欠番にする）
