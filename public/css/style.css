@@ -952,8 +952,11 @@
 
         /* ホバー中ずっとゆっくり揺れ続ける（最大1.3deg・2.8s・無限ループ）。
            角度はサインカーブそのもので、式は次のとおり:
-               角度 = 1.3deg × sin(2π × t)   t は進行度（0〜1）
+               角度 = -1.3deg × sin(2π × t)   t は進行度（0〜1）
            これを5%刻み（21点 ＝ 1周期あたり20分割）で近似している。
+
+           係数が負なのは「右から揺れ始める」ため。支点が上端中央なので、
+           正の回転（時計回り）だと画像の下端が左へ動く。右から始めたいので符号を反転している。
 
            細かく刻んで animation-timing-function を linear にしているのが要点。
            CSSのタイミング関数はキーフレームの「区間ごと」に効くため、
@@ -962,29 +965,29 @@
            刻みを細かくして linear で繋げば区間ごとのタメが消え、
            加減速はサインカーブ自身の値の変化だけが担う。
 
-           0%と100%はどちらも0degで、その手前・直後の傾きも同じ（-0.402→0→+0.402）なので、
+           0%と100%はどちらも0degで、その手前・直後の傾きも同じ（+0.402→0→-0.402）なので、
            ループの繋ぎ目で角度も進行方向も連続する。 */
         @keyframes wcardImageSway {
             0% { transform: rotate(0deg); }
-            5% { transform: rotate(0.402deg); }
-            10% { transform: rotate(0.764deg); }
-            15% { transform: rotate(1.052deg); }
-            20% { transform: rotate(1.236deg); }
-            25% { transform: rotate(1.3deg); }
-            30% { transform: rotate(1.236deg); }
-            35% { transform: rotate(1.052deg); }
-            40% { transform: rotate(0.764deg); }
-            45% { transform: rotate(0.402deg); }
+            5% { transform: rotate(-0.402deg); }
+            10% { transform: rotate(-0.764deg); }
+            15% { transform: rotate(-1.052deg); }
+            20% { transform: rotate(-1.236deg); }
+            25% { transform: rotate(-1.3deg); }
+            30% { transform: rotate(-1.236deg); }
+            35% { transform: rotate(-1.052deg); }
+            40% { transform: rotate(-0.764deg); }
+            45% { transform: rotate(-0.402deg); }
             50% { transform: rotate(0deg); }
-            55% { transform: rotate(-0.402deg); }
-            60% { transform: rotate(-0.764deg); }
-            65% { transform: rotate(-1.052deg); }
-            70% { transform: rotate(-1.236deg); }
-            75% { transform: rotate(-1.3deg); }
-            80% { transform: rotate(-1.236deg); }
-            85% { transform: rotate(-1.052deg); }
-            90% { transform: rotate(-0.764deg); }
-            95% { transform: rotate(-0.402deg); }
+            55% { transform: rotate(0.402deg); }
+            60% { transform: rotate(0.764deg); }
+            65% { transform: rotate(1.052deg); }
+            70% { transform: rotate(1.236deg); }
+            75% { transform: rotate(1.3deg); }
+            80% { transform: rotate(1.236deg); }
+            85% { transform: rotate(1.052deg); }
+            90% { transform: rotate(0.764deg); }
+            95% { transform: rotate(0.402deg); }
             100% { transform: rotate(0deg); }
         }
 
