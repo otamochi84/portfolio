@@ -875,24 +875,51 @@
             }
         }
 
-        /* 額縁のように、細い線と余白でカード全体を囲う。
+        /* 額装のように、余白でカード全体を囲う。枠線は引かず、
+           生成りの背景色（#faf8f4）とにじむ影だけで輪郭を出している。
+           #fff のセクション背景との色差そのものが輪郭の一部になるため、
+           影色も生成りに合わせて暖色寄りの黒（rgba(28,25,23,…)）にしている。
            枠そのものは動かさず、中の画像だけが動く見せ方にするための土台。
-           overflow:hidden は「揺れても画像が枠線を越えない」ための確定仕様
-           （余白0.75remは額縁のマットとしてそのまま残す） */
+
+           影は性格の違う2枚を重ねる。
+             1枚目（ambient）… オフセット0・ぼかし大。全周に等しくにじみ、横の境界を作る
+             2枚目（key）    … 下方向オフセット＋負スプレッド。真下に落ちて接地感を作る
+           1枚目が無いと横の境界がほぼ消える。2枚目は下方向オフセット＋負スプレッドで
+           締めてあるぶん、構造上どうしても影が真下に寄るため。
+           実測（右辺すぐ外側の画素値。地の白は255）:
+             ambientなし … ほぼ地の白と同化し、4px先では完全に255に戻る
+             ambientあり … 6段階ほど沈み、20px先まで尾を引いて境界が出る
+           絶対値は計測条件（DPR・測る高さ）で2程度ぶれるので、差と傾きで見ること。
+
+           overflow:hidden は「揺れても画像がカードの外に出ない」ための確定仕様
+           （余白0.75remは額装のマットとしてそのまま残す） */
         .wcard {
             display: block;
             padding: 0.75rem;
-            border: 1px solid #e5e7eb;
+            background-color: #faf8f4;
             color: var(--text-main);
             overflow: hidden;
+            box-shadow:
+                0 0 18px rgba(28, 25, 23, 0.06),
+                0 4px 6px -1px rgba(28, 25, 23, 0.05);
+            transition: box-shadow 0.5s ease;
+        }
+
+        /* ホバーでも2枚の関係は保ったまま、両方を一緒に強める。
+           ambientだけ据え置くとカードが浮いた瞬間に横の境界が相対的に痩せて見える */
+        .wcard:hover {
+            box-shadow:
+                0 0 28px rgba(28, 25, 23, 0.08),
+                0 20px 25px -5px rgba(28, 25, 23, 0.1);
         }
 
         /* 貼る写真の比率を決め打ちにするため 3:2 で固定する（About のスナップ写真と同じ考え方）。
-           画像が未登録のあいだは背景色がそのままプレースホルダになる */
+           画像が未登録のあいだは背景色がそのままプレースホルダになる。
+           寒色グレーのままだと生成りの余白から浮いて見えるので暖色側に寄せている */
         .wcard-image {
             aspect-ratio: 3 / 2;
             width: 100%;
-            background-color: #e5e7eb;
+            background-color: #ece7de;
             overflow: hidden;
         }
 
@@ -976,8 +1003,15 @@
         }
 
         /* 動きを減らす設定のユーザーには揺らさない。
-           揺れないなら合成レイヤーを確保する意味もないので will-change も戻す */
+           揺れないなら合成レイヤーを確保する意味もないので will-change も戻す。
+           影の変化（transition）も同じく付けない。ページ末尾のグローバル指定
+           （* に transition-duration: 0.01ms !important）でも消えるが、
+           Worksカードの動きをこの1ブロックで見渡せるよう明示しておく */
         @media (prefers-reduced-motion: reduce) {
+            .wcard {
+                transition: none;
+            }
+
             .wcard:hover .wcard-image {
                 animation: none !important;
                 will-change: auto !important;
@@ -1058,3 +1092,4 @@
                 transition-duration: 0.01ms !important;
             }
         }
+
