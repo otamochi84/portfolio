@@ -96,7 +96,12 @@
 
 **調査結果（2026-08-03 時点）**:
 - Instagram Basic Display API は2024年12月4日に完全停止。後継は「Instagram API with Instagram Login」で **Business / Creator アカウント限定**（個人アカウント不可）
-- トークンは60日で失効。ただし**Facebookページに紐づけた Page Access Token なら実質無期限**（記事で確認済み。パスワード変更や権限取り消しでは失効する）
+- トークンの期限は**認証方式によって違う**（2026-08-12にMeta公式ドキュメントで確認）
+  - **Instagram Login 方式**: Instagram User Token は60日で失効。自分でリフレッシュが必要
+  - **Facebook Login for Business 方式**: Facebookページに紐づけた**長期ページトークンは無期限**。公式ドキュメントの記述は "long-lived Page access tokens do not have an expiration date and only expire or are invalidated under certain conditions"。パスワード変更・権限取り消し・ページ権限の喪失で失効する
+- **ただしトークンとは別枠で `data_access_expires_at`（データアクセスの有効期限）がある。** アプリがユーザーデータを読む権限が最後の利用から**約90日**で失効し、リセットには再認証が要る。
+  **failure modeが厄介で、トークンは有効なままデータだけ空で返る**（エラーにならないので気づきにくい）。「無期限トークン」を紹介する記事はここに触れていないものが多い
+- したがって**運用は「60日ごとのトークン更新」ではなく「約90日ごとの再認証」**になる見込み。作業はゼロにはならない
 - oEmbed は2026年6月15日から**トークン不要・App Review不要**。ただし返るのはInstagram公式スタイルの埋め込みHTMLで、ギャラリービューにはならない
 
 **大橋さんの意向**: 画像主体のギャラリー表示にしたい。Instagram投稿の癖をつけたい。「何が書いてあるのか謎くらいで良い」。
