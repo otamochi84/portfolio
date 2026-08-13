@@ -92,7 +92,24 @@
 
 **デプロイ先に設定するのは `NOTION_API_KEY` だけでよい。** DB IDは `src/config/notion.ts` にgit管理で置いたので、環境変数から追加する必要はない。
 
-### 3. Journal の仕組み（方式未決）
+### 3. Journal の仕組み（2026-08-13 決着・Instagram連携は見送り）
+
+**Instagram連携はやらない。JournalはNotion（`HP_Journal`）のままで運用する。**
+
+決め手は「Instagram APIを使うにはFacebookページの作成と運用が必要」だったこと。**Instagramの更新を楽にするために、使わないFacebookページの運用が増えるのは本末転倒**という判断。セットアップ手順書（`docs/instagram-setup.md`）は不要になったので削除した。
+
+調べて分かったこと（将来また検討するときのために残す）:
+
+- **App Review は不要。** 自分のアカウントだけなら Standard Access で足りる
+- トークンの期限は**認証方式で違う**
+  - Instagram Login 方式 … Instagram User Token は60日、要リフレッシュ。**Facebookページ不要**
+  - Facebook Login for Business 方式 … 長期ページトークンは**無期限**。ただし**Facebookページが必須**
+- どちらの方式でも `data_access_expires_at`（約90日でデータアクセスが失効）が別枠で存在する。**トークンは有効なままデータだけ空で返る**ため気づきにくい
+- **静的サイトなので、投稿しても次のビルドまで反映されない。** 定期ビルドの仕組みが別途必要になる
+
+**「画像ベースの綺麗な見た目」はInstagramなしで達成した**（Notionの `HP_Journal` に画像プロパティを追加し、横スクロールギャラリー化）。当初の目的は満たせている。
+
+### 3-b. Journal の見た目（旧・方式未決メモ）
 
 **調査結果（2026-08-03 時点）**:
 - Instagram Basic Display API は2024年12月4日に完全停止。後継は「Instagram API with Instagram Login」で **Business / Creator アカウント限定**（個人アカウント不可）
