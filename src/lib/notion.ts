@@ -109,23 +109,77 @@ export type NotionBlock = {
  */
 export type OgpData = { title: string | null; description: string | null };
 
+// --- OGP取得のリトライ設定 ---
+// 相手サイトが一時的に遅いだけで諦めると、ブックマークカードのタイトルがURL表記に
+// 崩れたままビルドが成功してしまう（実際に pref.nara.lg.jp で発生）。数回だけ粘る。
+// 最終試行のタイムアウトだけ長いのは、もともと反応が遅いサイトは8秒だと
+// 何度やっても届かないため。試行ごとのタイムアウト（ミリ秒）を並べて持つ
+const ogpTimeouts = [8000, 8000, 15000];
+
+// リトライ前の待ち時間（ミリ秒）。相手に連打しないよう指数バックオフにする。
+// 要素数は ogpTimeouts より1つ少ない（最終試行のあとは待たないため）
+const ogpRetryDelays = [500, 1000];
+
 /**
- * OGP情報を取得する関数
+ * OGP解析用にHTMLを取得する（一時的な失敗はリトライする）
+ * @param url 対象URL
+ * @returns HTML文字列（全試行に失敗した場合はnull）
+ */
+async function fetchOgpHtml(url: string): Promise<string | null> {
+  // 最後に起きた失敗の理由。全試行に失敗したときのログに使う
+  let lastError = "";
+
+  for (let attempt = 0; attempt < ogpTimeouts.length; attempt++) {
+    try {
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(ogpTimeouts[attempt]),
+      });
+
+      if (response.ok) {
+        return await response.text();
+      }
+
+      // 404・403などは何度やっても結果が変わらないので、待たずにその場で諦める
+      if (response.status < 500) {
+        console.warn(
+          `OGP取得を中止しました (HTTP ${response.status}): ${url}`,
+          "→ ブックマークカードのタイトルがURL表記になります"
+        );
+        return null;
+      }
+
+      // 5xxは相手側の一時的な不調の可能性があるのでリトライする
+      lastError = `HTTP ${response.status}`;
+    } catch (e) {
+      // タイムアウト（AbortError）とネットワークエラーはどちらもリトライ対象
+      lastError = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    }
+
+    // 個々の試行の失敗はログに出さない（リトライで解決することが多く、
+    // 出すとビルドログが埋もれるため）。最終試行のあとは待たずにループを抜ける
+    const delay = ogpRetryDelays[attempt];
+    if (delay !== undefined) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  console.warn(
+    `OGP取得に${ogpTimeouts.length}回失敗しました (${lastError}): ${url}`,
+    "→ ブックマークカードのタイトルがURL表記になります"
+  );
+  return null;
+}
+
+/**
+ * OGP情報を取得する本体（メモ化なし）
  * @param url 対象URL
  * @returns OGPデータ（失敗時はnull）
  */
-export async function fetchOgpData(url: string): Promise<OgpData | null> {
+async function loadOgpData(url: string): Promise<OgpData | null> {
+  const html = await fetchOgpHtml(url);
+  if (html === null) return null;
+
   try {
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const html = await response.text();
-
     // og:title を取得、なければ <title> から取得
     let title: string | null = null;
     const ogTitleMatch = html.match(
@@ -187,9 +241,36 @@ export async function fetchOgpData(url: string): Promise<OgpData | null> {
       description: description ? decodeEntities(description) : null,
     };
   } catch (e) {
-    console.error("OGP fetch error:", e);
+    // 解析で想定外の例外が出てもビルドは止めない
+    // （getPageBlocks の Promise.all を落とさないため、ここで握りつぶす）
+    console.warn(
+      `OGPの解析に失敗しました: ${url}`,
+      "→ ブックマークカードのタイトルがURL表記になります",
+      e
+    );
     return null;
   }
+}
+
+// 1ビルド中に同じURLを何度もフェッチしないためのメモ。
+// 結果ではなくPromiseを持つのは、getPageBlocks のOGP取得がブロックをまたいで
+// 並列に走るため。結果を入れる実装だと同じURLが同時に複数走ってしまう
+// （loadManifest と同じ考え方）。
+// 失敗（null）もそのまま覚える。同じURLで3回の試行を繰り返すほうが無駄なため
+const ogpDataPromises = new Map<string, Promise<OgpData | null>>();
+
+/**
+ * OGP情報を取得する関数（1ビルド中は同じURLの取得結果を使い回す）
+ * @param url 対象URL
+ * @returns OGPデータ（失敗時はnull）
+ */
+export function fetchOgpData(url: string): Promise<OgpData | null> {
+  let promise = ogpDataPromises.get(url);
+  if (!promise) {
+    promise = loadOgpData(url);
+    ogpDataPromises.set(url, promise);
+  }
+  return promise;
 }
 
 // --- 画像の差分ダウンロード（マニフェスト） ---
