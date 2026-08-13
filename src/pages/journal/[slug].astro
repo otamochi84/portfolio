@@ -1,5 +1,6 @@
 ---
 import { getJournalEntries, getPageBlocks } from "../../lib/notion";
+import type { JournalEntry } from "../../lib/notion";
 import NotionBlocks from "../../components/NotionBlocks.astro";
 
 // 静的パス生成: 全活動記録からパス生成
@@ -12,7 +13,7 @@ export async function getStaticPaths() {
 }
 
 interface Props {
-  entry: any;
+  entry: JournalEntry;
 }
 
 const { entry } = Astro.props;

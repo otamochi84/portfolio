@@ -1,5 +1,6 @@
 ---
 import { getWorkCategories, getProjects, getPageBlocks } from "../../lib/notion";
+import type { WorkCategory } from "../../lib/notion";
 import NotionBlocks from "../../components/NotionBlocks.astro";
 
 // 静的パス生成: 公開状態のカテゴリのみ（getWorkCategoriesが公開・スラッグ有りに絞り込む）
@@ -12,7 +13,7 @@ export async function getStaticPaths() {
 }
 
 interface Props {
-  category: any;
+  category: WorkCategory;
 }
 
 const { category } = Astro.props;

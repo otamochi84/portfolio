@@ -1,5 +1,6 @@
 ---
 import { getProjects, getPageBlocks } from "../../lib/notion";
+import type { ProjectItem } from "../../lib/notion";
 import NotionBlocks from "../../components/NotionBlocks.astro";
 
 // 静的パス生成: スラッグが設定されている実績のみ
@@ -7,7 +8,10 @@ export async function getStaticPaths() {
   const projects = await getProjects();
   // スラッグ付きのみを対象にし、前後ナビ（getProjectsは実施時期の降順なので、前=新しい実績・後=古い実績）もここで解決する。
   // ページ側で解決するとページ数ぶん getProjects() を呼ぶことになるため
-  const sluggedProjects = projects.filter((project) => project.slug);
+  // 型ガード付きで絞り込み、params.slug が string であることを型でも保証する
+  const sluggedProjects = projects.filter(
+    (project): project is ProjectItem & { slug: string } => Boolean(project.slug)
+  );
   return sluggedProjects.map((project, index) => ({
     params: { slug: project.slug },
     props: {
@@ -19,9 +23,10 @@ export async function getStaticPaths() {
 }
 
 interface Props {
-  project: any;
-  newerProject: any;
-  olderProject: any;
+  project: ProjectItem;
+  // 前後ナビは端のページで存在しない（getStaticPathsがnullを渡す）
+  newerProject: ProjectItem | null;
+  olderProject: ProjectItem | null;
 }
 
 const { project, newerProject, olderProject } = Astro.props;
