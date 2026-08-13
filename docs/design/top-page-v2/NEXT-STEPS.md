@@ -204,11 +204,30 @@ sharpの `withoutEnlargement: true` により、**要求幅より元画像が小
 
 ### 既知の小さな問題（本番影響なし）
 
-`public/notion-images/` は毎ビルド再ダウンロードするが**古いファイルを消さない**ため、バリアントの幅を変えると孤児ファイルが残り、Astroのpublicコピーで未参照のまま `dist` に入る。
+#### 孤児ファイルが `public/notion-images/` に残る（2026-08-13／対応しないと決めた・蒸し返さないこと）
 
-**本番（Cloudflare Pages）はクリーンな状態からビルドするので影響しない。ローカルのみの話。** 気になるならビルド前に `public/notion-images/` を空にする npm script を足せば解決する（毎回再ダウンロードしているので削除してもコストは増えない）。
-- `projects/[slug].astro` の `interface Props` が `any` のまま。`notion.ts` の `ProjectItem` 型を使えば型安全になる
-- `getPageBlocks()` が本文画像を1枚ずつ直列にダウンロードしている。枚数が増えるとビルド時間に効く（`/works/notion/` で約2.9秒）
+`public/notion-images/` は**古いファイルを消さない**ため、バリアントの幅を変えると孤児ファイルが残り、Astroのpublicコピーで未参照のまま `dist` に入る。**本番（Cloudflare Pages）はクリーンな状態からビルドするので影響しない。ローカルのみの話。**
+
+**対応しない。** 理由:
+
+- 孤児が発生するのは**バリアントの幅を変えたとき＝画像処理のコードをいじったときだけ**で、改修が終わればほぼ起きない。溜まっても数ファイル規模（2026-08-13 に `design/top-page-v2` のworktreeで確認した時点では孤児0・全19ファイルが現役だった）
+- 消したくなったら `public/notion-images/` を手で削除すれば全部落とし直すだけで足りる
+
+**訂正**: ここには以前「ビルド前に `public/notion-images/` を空にする npm script を足せば解決する（毎回再ダウンロードしているのでコストは増えない）」と書いてあったが、これは**差分ダウンロード導入（2026-08-12）より前の記述**。いま同じことをするとビルドのたびにキャッシュが飛び、差分ダウンロードが無意味になる。**この案は採らない。**
+
+#### 対応済み（2026-08-13）
+
+- **`interface Props` の `any`**: `projects/[slug].astro` だけの問題として書いていたが、実際は `works/[slug].astro`（`category`）・`journal/[slug].astro`（`entry`）も同じ状態だったので**3ファイルまとめて実型に置き換えた**（`ProjectItem` / `WorkCategory` / `JournalEntry`）。`ProjectItem.slug` は `string | null` なので、`projects/[slug].astro` の `getStaticPaths` のフィルタに型ガード（`project is ProjectItem & { slug: string }`）を付けて `params.slug` を `string` に確定させている。works / journal は型の時点で `slug: string` なので型ガードは不要
+- **`getPageBlocks()` の直列ダウンロード**: **画像DLとOGP取得だけ**をブロックをまたいで並列化した（外部＝S3・任意のWebサイトへのアクセスでNotion APIのレートリミットに関係しないため）。ブロックの出力順は変えていない
+
+#### 子ブロックの再帰は意図的に直列のまま（蒸し返さないこと）
+
+`getPageBlocks()` の子ブロック再帰（`has_children` の再帰呼び出し）は**Notion APIを叩くので直列を維持する**。**「なぜ全部並列にしないのか」を蒸し返さないこと。**
+
+理由: いまの `getPageBlocks()` には**429のリトライ処理が無く、`catch` が `return []` を返す**。レートリミットに当たると**本文が丸ごと消えたままビルドが成功してしまう**（エラーで止まらないので気づけない）。ここを並列化するなら、先にリトライ（指数バックオフ）と「失敗したらビルドを止める」判断をセットで入れること。
+
+#### そのほか
+
 - 画像のローカル化に失敗した場合、画像は静かに消える。ビルドログに `画像のローカル化に失敗したので表示しません` が出るので、デプロイ時はログを確認すること
 
 ---
