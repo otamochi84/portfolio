@@ -73,6 +73,14 @@ const wcardSizes = [
     "calc((100vw - 256px) / 3 - 24px)"
 ].join(", ");
 
+// Journalギャラリー画像の表示幅（CSS実測ベース）。カード幅は .jgal-item の width: 74vw / max-width: 340px、
+// 画像幅はそこから .jgal-card の padding 0.75rem×2 を引いた値になる。
+// 340px に張り付くのは 74vw が 340px を超える 460px 以上なので、境目をそこに置いている
+const jgalSizes = [
+    "(max-width: 459px) calc(74vw - 24px)",
+    "316px"
+].join(", ");
+
 /**
  * srcset属性の値を組み立てる
  * @param sources 画像候補（widthは実際に出力されたpx）
@@ -266,23 +274,52 @@ const formatDate = (value) => {
         </div>
     </section>
 
-    <!-- Journal（活動記録） -->
+    <!-- Journal（活動記録。画像の横スクロールギャラリー） -->
     <section id="journal" class="sec sec-base">
         <div class="sec-head">
             <h2 class="sec-title">Journal</h2>
             <div class="sec-rule"></div>
         </div>
-        <div class="jrow-list">
-            {journalEntries.slice(0, 5).map((entry) => (
-                <a href={`/journal/${entry.slug}/`} class="jrow">
-                    <span class="jrow-date">{formatDate(entry.date)}</span>
-                    <span class="jrow-title">{entry.title}</span>
-                    <span class="jrow-arrow">READ ↗</span>
-                </a>
-            ))}
-            <div class="jrow-viewall">
-                <a href="/journal/" class="viewall-link">View all</a>
-            </div>
+        <!-- スクロール枠。カードは <a> なのでTabで辿れ、フォーカス時はブラウザが枠内へスクロールする -->
+        <div class="jgal-scroller">
+            <ul class="jgal-list">
+                {journalEntries.slice(0, 5).map((entry) => (
+                    <li class="jgal-item">
+                        <a href={`/journal/${entry.slug}/`} class="jgal-card">
+                            <!-- 画像はNotionから取得。未登録のときはプレースホルダ（背景色）のまま表示する -->
+                            <div class="jgal-image">
+                                {entry.image && (
+                                    <!-- srcのフルサイズ版はsrcset非対応環境向けのフォールバック -->
+                                    <img
+                                        src={entry.image}
+                                        srcset={buildSrcset(entry.imageSources)}
+                                        sizes={buildSrcset(entry.imageSources) ? jgalSizes : undefined}
+                                        alt={entry.title}
+                                        loading="lazy"
+                                    />
+                                )}
+                                <!-- ホバー時のオーバーレイ。ホバーできない環境ではCSSで消し、下のメタに任せる -->
+                                <div class="jgal-overlay">
+                                    <span class="jgal-overlay-date">{formatDate(entry.date)}</span>
+                                    {entry.category && (
+                                        <span class="jgal-overlay-category">Category：{entry.category}</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div class="jgal-meta">
+                                <!-- モバイルで出すのは日付だけ。カテゴリはPCのオーバーレイに任せる（PCではCSSで行ごと隠す） -->
+                                <span class="jgal-metaline">
+                                    <span class="jgal-date">{formatDate(entry.date)}</span>
+                                </span>
+                                <p class="jgal-title">{entry.title}</p>
+                            </div>
+                        </a>
+                    </li>
+                ))}
+            </ul>
+        </div>
+        <div class="jgal-viewall">
+            <a href="/journal/" class="viewall-link">View all</a>
         </div>
     </section>
 
@@ -318,6 +355,7 @@ const formatDate = (value) => {
     <section id="contact" class="site-footer">
         <p class="site-copyright">&copy; {new Date().getFullYear()} otamochi</p>
     </section>
+
 
 </body>
 

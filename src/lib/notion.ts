@@ -1006,6 +1006,9 @@ export type JournalEntry = {
   title: string;
   category: string;
   date: string; // ISO文字列
+  image: string; // ローカルパス(/notion-images/...)。画像が未登録なら空文字
+  // ギャラリー用の画像。srcset用に幅の異なる候補を幅の昇順で持つ（候補が1つ以下ならsrcsetは出さない）
+  imageSources: ImageSource[];
 };
 
 /**
@@ -1030,29 +1033,63 @@ export async function getJournalEntries(): Promise<JournalEntry[]> {
       ],
     });
 
-    // 日付が入力されているエントリのみを処理
-    const entriesWithDate = response.results
-      .map((page: any) => {
-        const props = page.properties;
-        const dateObject = props["日付"]?.date;
+    // 日付が入力されているエントリのみを処理。
+    // 画像のローカル化で待ちが入るため、mapではなくforで順に組み立てる
+    const entriesWithDate: Array<Omit<JournalEntry, "slug">> = [];
 
-        // 日付がない場合はスキップ
-        if (!dateObject || !dateObject.start) {
-          return null;
+    for (const page of response.results as any[]) {
+      const props = page.properties;
+      const dateObject = props["日付"]?.date;
+
+      // 日付がない場合はスキップ
+      if (!dateObject || !dateObject.start) {
+        continue;
+      }
+
+      const title = props["タイトル"]?.title?.[0]?.plain_text || "名称未設定";
+      const category = props["カテゴリ"]?.select?.name || "";
+      const date = dateObject.start;
+
+      // NotionのファイルURLは期限切れするため、ビルド時にローカル化する。
+      // 画像は1枚だけ使う。未登録のときは空文字のままにし、表示側のプレースホルダに任せる
+      // （Worksカードと同じくカード表示なので、srcset用の縮小版も併せて作る）
+      let image = "";
+      let imageSources: ImageSource[] = [];
+      const imageFile = props["画像"]?.files?.[0];
+      if (imageFile) {
+        const fileUrl = imageFile.file?.url || imageFile.external?.url;
+        if (fileUrl) {
+          try {
+            // URLから拡張子を取得
+            const urlObj = new URL(fileUrl);
+            let ext = path.extname(urlObj.pathname);
+            if (!ext) ext = ".png"; // デフォルト
+
+            const result = await downloadCardImage(
+              fileUrl,
+              `${page.id}${ext}`,
+              page.last_edited_time
+            );
+            image = result.image;
+            imageSources = result.imageSources;
+          } catch (e) {
+            // NotionのファイルURLは失効するのでフォールバックに使わない（空文字＝非表示）
+            console.error("活動記録の画像のローカル化に失敗したので表示しません:", page.id, e);
+            image = "";
+            imageSources = [];
+          }
         }
+      }
 
-        const title = props["タイトル"]?.title?.[0]?.plain_text || "名称未設定";
-        const category = props["カテゴリ"]?.select?.name || "";
-        const date = dateObject.start;
-
-        return {
-          id: page.id,
-          title,
-          category,
-          date,
-        };
-      })
-      .filter((entry) => entry !== null) as Array<Omit<JournalEntry, "slug">>;
+      entriesWithDate.push({
+        id: page.id,
+        title,
+        category,
+        date,
+        image,
+        imageSources,
+      });
+    }
 
     // スラッグを自動生成（同じ日付の場合は -2, -3 を付ける）
     const slugMap = new Map<string, number>();

@@ -622,7 +622,7 @@
             font-weight: 400;
         }
 
-        /* --- Journal（トップページの一覧） --- */
+        /* --- 日付＋タイトルの一覧（Worksカテゴリページの実績一覧） --- */
         .jrow-list {
             max-width: 900px;
             margin: 0;
@@ -636,7 +636,8 @@
             gap: 2rem;
             align-items: center;
             padding: 1.75rem 0;
-            border-bottom: 1px solid #e5e7eb;
+            /* 罫線はWorksカードの生成りに合わせた暖色グレー（寒色の#e5e7ebだと浮く） */
+            border-bottom: 1px solid #e7e3dc;
             color: var(--text-main);
         }
 
@@ -686,10 +687,6 @@
             opacity: 1;
         }
 
-        .jrow-viewall {
-            margin-top: 2.5rem;
-        }
-
         .viewall-link {
             font-size: 0.7rem;
             font-weight: 500;
@@ -704,6 +701,214 @@
         .viewall-link:hover {
             color: #b3592f;
             border-bottom-color: #b3592f;
+        }
+
+        /* --- Journal（トップページの画像ギャラリー） --- */
+        /* 横スクロールの枠。左端はセクションの内容と揃え、右端だけ .sec の左右パディングの外へ
+           広げて画面の端でカードを見切れさせる。スクロールバーを出さずに
+           「まだ続く」ことを伝えるための見せ方。
+           広げるのはネガティブマージンぶん（＝ちょうど画面の右端まで）なので、
+           枠自体が画面からはみ出すことはなく、ページ全体は横スクロールしない。
+
+           上下のパディングはカードの影を切らせないための逃げ。
+           overflow-x を指定すると縦方向も visible ではなくなり、
+           枠からはみ出した影がクリップされてしまうため、同じ量をマージンで戻している */
+        .jgal-scroller {
+            margin: -1.25rem -96px -2rem 0;
+            padding: 1.25rem 0 2rem;
+            overflow-x: auto;
+            /* 端まで来たときにページ側（ブラウザの戻る操作）へ引き継がせない */
+            overscroll-behavior-x: contain;
+            scroll-snap-type: x mandatory;
+            /* スクロールバーは常時表示しない。見切れたカードが続きの合図を担う */
+            scrollbar-width: none;
+        }
+
+        .jgal-scroller::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 最後まで送ったときに末尾のカードが画面の端へ張り付かないよう、
+           右へはみ出させたぶんと同じ余白を末尾に足し、他のセクションの右端と揃える。
+           スクロール枠の padding-right でも最後のカードの margin-right でも余白は現れない
+           （どちらもはみ出し量に算入されないことを実測で確認済み）ため、
+           リスト自身を width: max-content にして、その箱の padding として持たせている */
+        .jgal-list {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+            width: max-content;
+            padding-right: 96px;
+        }
+
+        .jgal-item {
+            flex: 0 0 auto;
+            /* モバイルは次のカードが覗く幅にし、PCでは340pxで頭打ちにする */
+            width: 74vw;
+            max-width: 340px;
+            scroll-snap-align: start;
+        }
+
+        /* 額装の見せ方はWorksカードと同じ（生成り＋枠線なし＋にじむ影2枚重ね）。
+           影の値は .wcard からそのまま持ってきている。
+           .wcard と違い overflow は切らない。中の画像を揺らさないので必要がなく、
+           切るとフォーカスリング（outline-offset: 3px）まで削れてしまうため */
+        .jgal-card {
+            display: block;
+            padding: 0.75rem;
+            background-color: #faf8f4;
+            color: var(--text-main);
+            /* 影はホバーでも変えない。このカードの主役はオーバーレイの出現なので、
+               影まで動かすと変化が増えすぎる（Worksカードとは意図的に流儀を変えている） */
+            box-shadow:
+                0 0 18px rgba(28, 25, 23, 0.06),
+                0 4px 6px -1px rgba(28, 25, 23, 0.05);
+        }
+
+        /* 写真の比率はWorksカードと揃えて3:2で固定する。
+           画像が未登録のあいだは背景色（暖色グレー）がそのままプレースホルダになる */
+        .jgal-image {
+            position: relative;
+            aspect-ratio: 3 / 2;
+            width: 100%;
+            background-color: #ece7de;
+            overflow: hidden;
+        }
+
+        .jgal-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* ホバー時に写真へ重ねるメタ情報。日付を上、カテゴリを下に置く。
+           既定では display:none にしておき、ホバーできる環境だけで表示する */
+        .jgal-overlay {
+            display: none;
+            position: absolute;
+            inset: 0;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1.1rem;
+            /* 暗色オーバーレイ（採用案）。ただの黒幕ではなくアクセント（#b3592f）の色相へ寄せた暗色にして、
+               「このサイトの影」に見せている。文字は生成り。
+               不透明度0.68はコントラストの実測から決めた値。色相を寄せたぶん素の暗色より明るくなり、
+               0.62では真っ白な写真の上で4.22:1しか出ずAA（4.5:1）に届かない。0.68なら5.11:1で余裕がある。
+               薄くしたくなったときは、必ず白地の写真を想定して再測定すること */
+            background-color: rgba(58, 30, 18, 0.68);
+            color: #faf8f4;
+            opacity: 0;
+            transition: opacity 0.45s ease;
+        }
+
+        .jgal-overlay-date {
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.16em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 日付（Jost 500）と同じ大きさで並ぶため、太さで主役をカテゴリ側に寄せる。
+           Noto Sans JP は 400 と 500 の差が小さく、読み込んでいる中で確実に差が出るのは 700 */
+        .jgal-overlay-category {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+        }
+
+        /* 画像の下のメタ。モバイルでは日付とタイトルを常時表示し、
+           PCではタイトル以外をオーバーレイへ移す（下の @media (hover: hover) を参照）。
+           カテゴリはモバイルでは出さない（一覧が情報過多になるため、PCのオーバーレイだけで見せる） */
+        .jgal-meta {
+            margin-top: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.45rem;
+        }
+
+        /* 日付を載せる行。PCではこの行ごと隠してオーバーレイに任せるため、
+           日付そのものではなく行を単位にしてある */
+        .jgal-metaline {
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 0.5em;
+        }
+
+        /* 日付の流儀は .jrow-date と揃える（小さく・レタースペース広め・等幅数字） */
+        .jgal-date {
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.16em;
+            color: #6b7280;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* タイトルの行数は常に2行ぶんで固定し、カードの高さを揃える。
+           1行のタイトルでも2行ぶんの高さを先に確保し、3行以上になるものは2行で省略する。
+           高さは line-height から計算する（--jgal-title-lines × 行の高さ）。
+           1em はこの要素自身の font-size なので、文字サイズを変えても付いてくる */
+        .jgal-title {
+            --jgal-title-line-height: 1.6;
+            --jgal-title-lines: 2;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 400;
+            line-height: var(--jgal-title-line-height);
+            min-height: calc(1em * var(--jgal-title-line-height) * var(--jgal-title-lines));
+            /* 2行を超えたぶんは「…」で省略する。line-clamp は -webkit-box とセットでないと効かない */
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: var(--jgal-title-lines);
+            line-clamp: var(--jgal-title-lines);
+            overflow: hidden;
+            /* 省略の判定幅をカード幅に固定する。親が align-items: flex-start のため、
+               指定しないと短いタイトルの箱が文字幅まで縮み、折り返し位置が揃わない */
+            align-self: stretch;
+            color: var(--text-main);
+            transition: color 0.3s ease;
+        }
+
+        .jgal-card:hover .jgal-title {
+            color: #b3592f;
+        }
+
+        .jgal-viewall {
+            margin-top: 3rem;
+        }
+
+        /* ホバーできる環境だけ、日付を写真の上のオーバーレイへ移す（カテゴリはここでしか出さない）。
+           タッチ端末に出すと :hover が貼り付いたまま残るうえ、そもそも出す手段が無く
+           日付が完全に見えなくなるため、そちらは画像の下の常時表示のままにしている。
+           :focus-visible も条件に入れて、キーボード操作でも同じ情報が読めるようにする */
+        @media (hover: hover) {
+            .jgal-overlay {
+                display: flex;
+            }
+
+            .jgal-card:hover .jgal-overlay,
+            .jgal-card:focus-visible .jgal-overlay {
+                opacity: 1;
+            }
+
+            .jgal-meta .jgal-metaline {
+                display: none;
+            }
+        }
+
+        /* 動きを減らす設定のユーザーには、文字色・オーバーレイの変化を付けない */
+        @media (prefers-reduced-motion: reduce) {
+            .jgal-title,
+            .jgal-overlay {
+                transition: none;
+            }
+
+            .jgal-scroller {
+                scroll-behavior: auto;
+            }
         }
 
         /* --- Contact（コピーライトのみ） --- */
@@ -734,6 +939,15 @@
                 padding: 0 48px 2.5rem;
             }
 
+            /* 右へのはみ出し量は .sec の右パディングと必ず同じにする（画面の端でぴたりと止める） */
+            .jgal-scroller {
+                margin-right: -48px;
+            }
+
+            .jgal-list {
+                padding-right: 48px;
+            }
+
             /* 1カラムに落とすため下端揃えは不要になる。スペーサーは伸縮させない */
             .about-grid {
                 grid-template-columns: 1fr;
@@ -759,6 +973,15 @@
 
             .site-footer {
                 padding: 0 24px 2rem;
+            }
+
+            /* 右へのはみ出し量は .sec の右パディングと必ず同じにする（画面の端でぴたりと止める） */
+            .jgal-scroller {
+                margin-right: -24px;
+            }
+
+            .jgal-list {
+                padding-right: 24px;
             }
 
             .sec-head {
@@ -842,8 +1065,14 @@
                 width: min(100%, 640px);
             }
 
+            /* 氏名・罫・ワードマークは3つとも折り返さない要素なので、
+               並べたままだと1行の最小幅が約332pxになり、狭い画面ではページごと横に溢れる
+               （320px幅で実測: html.scrollWidth 356px ＝ 36pxのはみ出し）。
+               入りきらないときだけワードマークを次の行へ落として、素直に縮むようにする。
+               収まる幅（実測で378px以上）では今までどおり1行のまま */
             .about-name-row {
                 margin-bottom: 2rem;
+                flex-wrap: wrap;
             }
 
             /* 日付を上段に回して2段組にする */
