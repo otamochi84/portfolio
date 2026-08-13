@@ -776,48 +776,57 @@ export async function getPageBlocks(pageId: string): Promise<NotionBlock[]> {
         page_size: 100,
       });
 
-      for (const block of response.results) {
-        const blockWithId = block as any;
+      const pageBlocks = response.results.map((block) => block as any);
 
-        // image タイプのブロックはURLをローカル化
-        if (blockWithId.type === "image") {
-          const imageBlock = blockWithId.image;
-          const fileUrl =
-            imageBlock?.file?.url || imageBlock?.external?.url;
+      // 画像DLとOGP取得はS3や外部サイトへのアクセスでNotion APIのレートリミットに関係しないため、
+      // ブロックをまたいで並列に走らせる。各ブロック内で例外を握りつぶすので Promise.all は落ちない
+      await Promise.all(
+        pageBlocks.map(async (blockWithId) => {
+          // image タイプのブロックはURLをローカル化
+          if (blockWithId.type === "image") {
+            const imageBlock = blockWithId.image;
+            const fileUrl =
+              imageBlock?.file?.url || imageBlock?.external?.url;
 
-          if (fileUrl) {
-            try {
-              const urlObj = new URL(fileUrl);
-              let ext = path.extname(urlObj.pathname);
-              if (!ext) ext = ".png";
+            if (fileUrl) {
+              try {
+                const urlObj = new URL(fileUrl);
+                let ext = path.extname(urlObj.pathname);
+                if (!ext) ext = ".png";
 
-              const fileName = `${blockWithId.id}${ext}`;
-              // 本文画像は last_edited_time をブロック単位で持っているのでそれを使う
-              const localPath = await downloadImage(
-                fileUrl,
-                fileName,
-                blockWithId.last_edited_time
-              );
-              blockWithId.localImagePath = localPath;
-            } catch (e) {
-              // localImagePath が未設定のときの扱いは NotionBlocks 側に任せる
-              // （外部URLならそれを使い、NotionのファイルURLなら失効するので表示しない）
-              console.error("本文画像のローカル化に失敗しました:", blockWithId.id, e);
+                const fileName = `${blockWithId.id}${ext}`;
+                // 本文画像は last_edited_time をブロック単位で持っているのでそれを使う
+                const localPath = await downloadImage(
+                  fileUrl,
+                  fileName,
+                  blockWithId.last_edited_time
+                );
+                blockWithId.localImagePath = localPath;
+              } catch (e) {
+                // localImagePath が未設定のときの扱いは NotionBlocks 側に任せる
+                // （外部URLならそれを使い、NotionのファイルURLなら失効するので表示しない）
+                console.error("本文画像のローカル化に失敗しました:", blockWithId.id, e);
+              }
             }
           }
-        }
 
-        // bookmark タイプのブロックはOGP情報を取得
-        if (blockWithId.type === "bookmark") {
-          const bookmarkBlock = blockWithId.bookmark;
-          const bookmarkUrl = bookmarkBlock?.url;
+          // bookmark タイプのブロックはOGP情報を取得
+          if (blockWithId.type === "bookmark") {
+            const bookmarkBlock = blockWithId.bookmark;
+            const bookmarkUrl = bookmarkBlock?.url;
 
-          if (bookmarkUrl) {
-            const ogpData = await fetchOgpData(bookmarkUrl);
-            blockWithId.ogpData = ogpData;
+            if (bookmarkUrl) {
+              const ogpData = await fetchOgpData(bookmarkUrl);
+              blockWithId.ogpData = ogpData;
+            }
           }
-        }
+        })
+      );
 
+      // 子ブロックの再帰はNotion APIを叩くので直列のまま維持する。
+      // 429のリトライ処理が無く catch が return [] を返すため、レートリミットに当たると
+      // 本文が消えたままビルドが成功してしまう
+      for (const blockWithId of pageBlocks) {
         // has_children = true なら子を1階層再帰取得
         if (blockWithId.has_children) {
           const children = await getPageBlocks(blockWithId.id);
