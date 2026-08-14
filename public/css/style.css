@@ -431,17 +431,19 @@
         /* --- 本文（和文・欧文） --- */
         .body-jp {
             font-family: 'Zen Old Mincho', serif;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             line-height: 1.95;
             letter-spacing: 0.15em;
             color: var(--text-sub);
             font-weight: 400;
         }
 
-        /* 欧文に0.15emを当てると行長が伸びて手置き改行が崩れるため0.06em固定 */
+        /* 欧文に0.15emを当てると行長が伸びて手置き改行が崩れるため0.06em固定。
+           最長行は 366.9px あり、左カラムがそれを下回る画面幅（約1248px未満）では
+           <br> で置いた改行が崩れる。読みやすさを優先してこのサイズを採っている */
         .body-en {
             font-family: 'EB Garamond', serif;
-            font-size: 0.8rem;
+            font-size: 1rem;
             line-height: 1.95;
             letter-spacing: 0.06em;
             color: var(--text-sub);
@@ -533,19 +535,25 @@
         }
 
         /* 写真の右下に置く。中身の幅ぶんだけ箱を作り、左の余りを自動マージンで潰して右端に付ける。
-           行内の文字は左揃えのまま（右揃えにすると菱形→年号→本文の位置が行ごとにずれるため） */
+           行内の文字は左揃えのまま（右揃えにすると菱形→年号→本文の位置が行ごとにずれるため）。
+           --background-inset は写真の右端からどれだけ内側へ寄せるかの調整値 */
         .about-background {
+            --background-inset: 1.5rem;
+
             flex-shrink: 0;
             width: fit-content;
             max-width: 100%;
             margin-left: auto;
+            margin-right: var(--background-inset);
         }
 
+        /* 書体・太さ・字間はセクション見出し（.sec-title）に揃える。
+           色だけはアクセントのテラコッタを残し、見出しそのものとは階層を分ける */
         .about-background-title {
-            font-family: 'Comfortaa', sans-serif;
-            font-size: 0.62rem;
-            font-weight: 700;
-            letter-spacing: 0.24em;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
             color: #b3592f;
         }
 
@@ -579,7 +587,7 @@
         }
 
         .about-background-year {
-            font-size: 0.62rem;
+            font-size: 0.7rem;
             font-weight: 400;
             letter-spacing: 0.06em;
             color: #9ca3af;
@@ -605,7 +613,7 @@
 
         .about-background-jp {
             font-family: 'Zen Old Mincho', serif;
-            font-size: 0.65rem;
+            font-size: 0.7rem;
             line-height: 1.5;
             letter-spacing: 0.06em;
             color: #6b7280;
@@ -615,7 +623,7 @@
         /* 色は和文（.about-background-jp）と揃える。書体と字間だけで和欧を描き分ける */
         .about-background-en {
             font-family: 'EB Garamond', serif;
-            font-size: 0.64rem;
+            font-size: 0.8rem;
             line-height: 1.5;
             letter-spacing: 0.03em;
             color: #6b7280;
