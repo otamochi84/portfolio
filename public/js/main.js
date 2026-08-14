@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupIntro();
     setupNavToggle();
     setupSlideshows();
+    setupJournalViewall();
 });
 
 // イントロ（ロード画面）の後始末
@@ -112,4 +113,32 @@ function setupSlideshows() {
             setInterval(showNextSlide, displayDuration);
         }, startInterval * slideshowIndex);
     });
+}
+
+// Journalの横スクロール末尾に置いたVIEW ALLを、画面に入ってきたところで出す
+// 見た目はCSS側が持ち、ここは出現の合図（is-visible）だけを担う。
+// 監視範囲はビューポート全体にしてある。スクロール枠を基準にすると、
+// 横スクロールしていなくても「枠の中に入っている」と判定されてしまうため
+function setupJournalViewall() {
+    const list = document.querySelector('.jgal-list');
+    const item = document.querySelector('.jgal-viewall-item');
+    if (!list || !item) return;
+
+    // 監視できない環境では隠さず、出したままにする
+    if (!('IntersectionObserver' in window)) return;
+
+    // JSが動いたことを確認できたこの時点で初めて隠す。
+    // CSSだけで隠すと、JSが無効・読み込み失敗のときにリンクが永久に見えなくなる
+    list.setAttribute('data-observed', '');
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            item.classList.add('is-visible');
+            // 一度出したら戻さない（スクロールのたびに明滅させない）
+            observer.disconnect();
+        });
+    }, { threshold: 0.4 });
+
+    observer.observe(item);
 }

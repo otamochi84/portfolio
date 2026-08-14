@@ -45,6 +45,9 @@ const navLinks = [
 
 const contactUrl = "https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105";
 
+// Journalの横スクロールに並べるカードの上限。これを超えたぶんは末尾のVIEW ALLから一覧ページへ送る
+const journalCardLimit = 7;
+
 // Notionから活動カテゴリ（Worksの3カード）・活動記録を取得
 const workCategories = await getWorkCategories();
 const journalEntries = await getJournalEntries();
@@ -283,7 +286,7 @@ const formatDate = (value) => {
         <!-- スクロール枠。カードは <a> なのでTabで辿れ、フォーカス時はブラウザが枠内へスクロールする -->
         <div class="jgal-scroller">
             <ul class="jgal-list">
-                {journalEntries.slice(0, 5).map((entry) => (
+                {journalEntries.slice(0, journalCardLimit).map((entry) => (
                     <li class="jgal-item">
                         <a href={`/journal/${entry.slug}/`} class="jgal-card">
                             <!-- 画像はNotionから取得。未登録のときはプレースホルダ（背景色）のまま表示する -->
@@ -316,10 +319,14 @@ const formatDate = (value) => {
                         </a>
                     </li>
                 ))}
+                <!-- カード列の末尾。上限を超えたぶんは一覧ページで見せる -->
+                <li class="jgal-item jgal-viewall-item">
+                    <a href="/journal/" class="jgal-viewall-link">
+                        <span class="jgal-viewall-label">View all</span>
+                        <span class="jgal-viewall-arrow" aria-hidden="true">→</span>
+                    </a>
+                </li>
             </ul>
-        </div>
-        <div class="jgal-viewall">
-            <a href="/journal/" class="viewall-link">View all</a>
         </div>
     </section>
 

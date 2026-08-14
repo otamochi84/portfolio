@@ -695,22 +695,6 @@
             opacity: 1;
         }
 
-        .viewall-link {
-            font-size: 0.7rem;
-            font-weight: 500;
-            letter-spacing: 0.28em;
-            text-transform: uppercase;
-            color: var(--text-main);
-            border-bottom: 1px solid var(--text-main);
-            padding-bottom: 0.35rem;
-            transition: color 0.3s ease, border-color 0.3s ease;
-        }
-
-        .viewall-link:hover {
-            color: #b3592f;
-            border-bottom-color: #b3592f;
-        }
-
         /* --- Journal（トップページの画像ギャラリー） --- */
         /* 横スクロールの枠。左端はセクションの内容と揃え、右端だけ .sec の左右パディングの外へ
            広げて画面の端でカードを見切れさせる。スクロールバーを出さずに
@@ -884,8 +868,66 @@
             color: #b3592f;
         }
 
-        .jgal-viewall {
-            margin-top: 3rem;
+        /* --- Journal末尾のVIEW ALL --- */
+        /* 額装は付けず、テキストだけが画面に入ってきたところでふわっと現れる。
+           カード型（他のカードと同じ額装で並べる案）と実機で見比べて、こちらを採った。
+           カード幅のままだと額装がないぶん余白が広すぎるので、幅は中身に合わせて詰める */
+
+        /* 高さは他のカードに合わせる。align-self: stretch で列の高さいっぱいまで伸ばし、
+           中身を上下中央に置く（.jgal-list は align-items: flex-start なので個別に指定する） */
+        .jgal-viewall-item {
+            display: flex;
+            align-self: stretch;
+            width: auto;
+            min-width: 11rem;
+        }
+
+        .jgal-viewall-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.9rem;
+            width: 100%;
+            color: var(--text-main);
+            transition: color 0.3s ease;
+        }
+
+        /* 字間・大文字化は、かつてカード下に置いていたリンクの流儀をそのまま引き継ぐ */
+        .jgal-viewall-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+        }
+
+        .jgal-viewall-arrow {
+            font-size: 0.9rem;
+            line-height: 1;
+            transition: transform 0.3s ease;
+        }
+
+        .jgal-viewall-link:hover {
+            color: #b3592f;
+        }
+
+        .jgal-viewall-link:hover .jgal-viewall-arrow {
+            transform: translateX(0.35rem);
+        }
+
+        /* フェードインの初期状態は、JSが動いたことを確認できてから当てる（data-observed はJSが付ける）。
+           CSSだけで隠すと、JS無効やスクリプト失敗時にリンクが永久に見えなくなるため。
+           1.1秒は実機で決めた値。0.7秒だと速く感じた（最後まで送りきったご褒美として出すので、
+           急いで現れるより、ゆっくり浮かび上がるほうが合う） */
+        .jgal-list[data-observed] .jgal-viewall-item {
+            opacity: 0;
+            transform: translateX(1.5rem);
+            transition: opacity 1.1s ease, transform 1.1s ease;
+        }
+
+        .jgal-list[data-observed] .jgal-viewall-item.is-visible {
+            opacity: 1;
+            transform: none;
         }
 
         /* ホバーできる環境だけ、日付を写真の上のオーバーレイへ移す（カテゴリはここでしか出さない）。
@@ -910,12 +952,20 @@
         /* 動きを減らす設定のユーザーには、文字色・オーバーレイの変化を付けない */
         @media (prefers-reduced-motion: reduce) {
             .jgal-title,
-            .jgal-overlay {
+            .jgal-overlay,
+            .jgal-viewall-arrow {
                 transition: none;
             }
 
             .jgal-scroller {
                 scroll-behavior: auto;
+            }
+
+            /* VIEW ALLのフェードインは行わず、最初から出したままにする */
+            .jgal-list[data-observed] .jgal-viewall-item {
+                opacity: 1;
+                transform: none;
+                transition: none;
             }
         }
 
