@@ -1,46 +1,127 @@
-# Astro Starter Kit: Basics
+# otamochi portfolio
 
-```sh
-npm create astro@latest -- --template basics
+大橋亮太（otamochi）のポートフォリオサイト。公開先は https://otamochi.com/
+
+**文章・画像・実績はNotionで管理している。** このリポジトリが持っているのはデザインと組み立ての仕組みで、中身はサイトを作るたびにNotionから取ってくる。つまり、載せる内容を変えたいときに触るのはNotionであって、このコードではない。
+
+---
+
+## ブランチは2つだけ
+
+| ブランチ | 役割 |
+| --- | --- |
+| `main` | **公開用。** ここに反映すると otamochi.com が自動で更新される |
+| `work` | **編集用。** ふだんの作業はここでやる。保存すると確認用URLが自動で発行される |
+
+`main` に直接コミットしない。必ず `work` で作業してから `main` に反映する。
+
+## 日々の更新の流れ
+
+### 1. 編集する
+
+```bash
+git checkout work        # 編集用に移動（すでにいるなら不要）
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+コードを編集する。**Notionの中身を変えただけならこの手順は要らない**（次にサイトを作り直したときに自動で反映される）。
 
-## 🚀 Project Structure
+### 2. 保存して確認する
 
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
+```bash
+git add .
+git commit -m "何を変えたかを書く（例: Aboutの本文を差し替え）"
+git push
 ```
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+pushすると、Cloudflareが**確認用のURL**を自動で発行する。まだ公開はされていないので、ここで安心して見比べられる。
 
-## 🧞 Commands
+URLはCloudflareのダッシュボード（Workers & Pages → プロジェクト → デプロイ）で確認できる。
 
-All commands are run from the root of the project, from a terminal:
+### 3. 公開する
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+確認して問題なければ、`main` に反映する。
 
-## 👀 Want to learn more?
+```bash
+git checkout main
+git merge work
+git push
+```
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+pushした時点で自動的にビルドが始まり、数分で otamochi.com に反映される。
+
+そのあと編集用に戻る。
+
+```bash
+git checkout work
+git merge main           # mainの内容をworkにも取り込んで揃えておく
+```
+
+## 手元で確認する
+
+公開もCloudflareも通さず、自分のMacだけで見たいとき。
+
+```bash
+npm install     # 初回のみ
+npm run dev
+```
+
+http://localhost:4321/ が開ける。編集するとその場で反映される。
+
+---
+
+## Notionとの対応
+
+Notionの親ページ「HP」の下に4つのデータベースがある。
+
+| データベース | サイト上のどこ |
+| --- | --- |
+| `HP_Contents` | キービジュアル、About本文、スナップ写真、Background（経歴） |
+| `HP_Works` | トップの活動カテゴリ3枚のカードと、その各ページ（`/works/[スラッグ]`） |
+| `HP_Projects` | 個別の実績と、その詳細ページ（`/projects/[スラッグ]`） |
+| `HP_Journal` | Journal（画像の横スクロールギャラリー）と、各記事ページ |
+
+### 新しくデータベースを作ったときの注意
+
+**Notionの画面で、親ページ「HP」にインテグレーション「HP連携」を接続すること。** 接続を忘れるとサイトを作るときに404で失敗する。現在は親ページに接続済みなので、その下に作れば自動的に引き継がれる。
+
+### 画像をアップするときの条件
+
+活動カテゴリ（`HP_Works`）の画像は **3:2の横長・長辺1200px以上**。大きいぶんはサイトを作るときに自動で軽くするので、縮小してから貼る必要はない。
+
+---
+
+## 設定と鍵
+
+### 秘密にするもの
+
+`.env` に入れるのは `NOTION_API_KEY` だけ。**このファイルはgitに含めない。**
+
+Cloudflare側にも同じ鍵を「シークレット」として登録してある（設定 → 変数とシークレット）。
+
+### 秘密にしないもの
+
+データベースIDは `src/config/notion.ts` にそのまま書いてgit管理している。IDを読むにはAPIトークンとインテグレーションの接続が両方必要で、トークンが漏れればIDは一覧で取得できてしまうため、隠しても防御にならない。
+
+git管理にしておくことで、複数のMacで作業してもIDの食い違いが起きない。
+
+---
+
+## 構成
+
+- **Astro**（静的サイト生成）— すべてのページをあらかじめHTMLにしておく方式。訪問者を待たせない
+- **Cloudflare Pages**（公開先）— `main` への反映を検知して自動でビルドする
+- **Notion API**（データ取得）— ビルド時にNotionから文章と画像を取得し、画像はローカルに保存して最適化する
+
+### コマンド一覧
+
+| コマンド | 内容 |
+| --- | --- |
+| `npm run dev` | 手元で確認する（http://localhost:4321/） |
+| `npm run build` | サイトを組み立てて `dist/` に出力する |
+| `npm run preview` | 組み立てた結果を手元で表示して確かめる |
+
+### 画像の扱い
+
+Notionから取得した画像は `public/notion-images/` に保存され、WebPに変換される。前回から変わっていない画像は再ダウンロードしない（`.image-manifest.json` で管理）。
+
+このフォルダはgit管理外なので、**中身を消しても次のビルドで作り直される。** 全部取り直したいときは手で消してよい。
