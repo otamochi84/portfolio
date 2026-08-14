@@ -33,9 +33,11 @@ git commit -m "何を変えたかを書く（例: Aboutの本文を差し替え�
 git push
 ```
 
-pushすると、Cloudflareが**確認用のURL**を自動で発行する。まだ公開はされていないので、ここで安心して見比べられる。
+pushすると、Cloudflareが自動でビルドして**確認用のURL**に反映する。まだ公開はされていないので、ここで安心して見比べられる。スマホからも開ける。
 
-URLはCloudflareのダッシュボード（Workers & Pages → プロジェクト → デプロイ）で確認できる。
+**https://work.otamochi-portfolio.pages.dev/**
+
+反映まで数分かかる。ビルドの進み具合はCloudflareのダッシュボード（Workers & Pages → プロジェクト → デプロイ）で見られる。
 
 ### 3. 公開する
 
