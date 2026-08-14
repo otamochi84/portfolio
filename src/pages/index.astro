@@ -1,27 +1,95 @@
 ---
-import { getWorks, getJournalEntries } from "../lib/notion";
+import { getWorkCategories, getJournalEntries, getSiteContents, pickSiteContent, getBackgroundItems } from "../lib/notion";
 
-// Phase 1: テキスト・リンク設定をHTMLに直接展開するためのデータ
-const siteConfig = {
+// プロフィール（About）。Notion側の本文が空のときに使うフォールバック
+// 改行位置はデザイン確定値のため <br> で固定する
+const aboutProfile = {
     name: "Ryota Ohashi",
-    role: "otamochi",
-    bio: "Notion Architect / Template Creator \nbased in Nara, Japan.",
-    freeTextTitle: "About",
-    freeTextBodyEn: "I specialize in designing custom operational systems for small and medium-sized businesses,\nincluding database design, automations, and integrations.\n\nMy goal is to help teams work smarter with tools that fit their unique workflows.",
-    freeTextBodyJp: "中小企業や個人の方を中心に、\n「Notionを入れてみたけどうまく使えていない」\n「これから導入を検討している」\nという方のお手伝いをしています。\n\nNotionは、仕事で使ういろんな道具をひとつにまとめられるツールです。\n\n「情報がバラバラで探しにくい」\n「Excelやスプレッドシートの管理が限界」\n——Notionを使えばそんな悩みを解決できます。\n\nタスク管理、日報、顧客管理、社内wikiなど、必要な情報をNotionでひとつにまとめ、\n無理なく使い続けられる仕組みを設計・構築します。\n\nまずはお気軽にご相談ください。",
-    links: [
-        { label: "Template ", url: "https://www.notion.com/ja/@otamochi" },
-        { label: "X (Twitter)", url: "https://x.com/Otamochi84" },
-        { label: "LINE", url: "https://lin.ee/CPoxhA7" },
-        { label: "Email", url: "mailto:hello@otamochi.com" }
+    wordmark: "otamochi",
+    jp: [
+        "1994年生まれ",
+        "奈良県吉野郡大淀町出身",
+        "大学では果樹の香りを研究し",
+        "化粧品メーカーで研究開発へ",
+        "その後　中小企業のアトツギ支援を経て",
+        "2024年に独立",
+        "2025年　結婚を機に奈良へUターン",
+        "現在は香芝市を拠点に活動"
+    ],
+    en: [
+        "Born in 1994",
+        "in Oyodo, Nara Prefecture.",
+        "Researched the aroma of fruit trees at university,",
+        "then joined a cosmetics manufacturer in R&D.",
+        "Later supported successors of family-run businesses,",
+        "and became independent in 2024.",
+        "Returned to Nara in 2025 after marrying,",
+        "and now works from Kashiba."
     ]
 };
 
-// Phase 2: getWorks() を使用して実績データを取得
-const works = await getWorks();
+// 学歴（Background）。Notion側が空のときに使うフォールバック
+// 英語は名詞句で統一し、学位は国際的に通じる表記にする
+const backgroundFallback = [
+    { year: "2013", jp: "奈良県立畝傍高等学校 卒業", en: "Unebi High School, Nara" },
+    { year: "2018", jp: "神戸大学農学部 卒業", en: "BSc in Agriculture, Kobe University" },
+    { year: "2020", jp: "神戸大学大学院農学研究科 修了", en: "MSc in Agriculture, Kobe University" }
+];
 
-// Phase 3: getJournalEntries() を使用して活動記録を取得
+// ナビゲーションのリンク（すべてトップ内のアンカー）
+const navLinks = [
+    { label: "About", href: "#about" },
+    { label: "Journal", href: "#journal" },
+    { label: "Works", href: "#works" }
+];
+
+const contactUrl = "https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105";
+
+// Notionから活動カテゴリ（Worksの3カード）・活動記録を取得
+const workCategories = await getWorkCategories();
 const journalEntries = await getJournalEntries();
+
+// Notionから差し替えコンテンツ（キービジュアル・スナップ写真・About本文）を取得
+const siteContents = await getSiteContents();
+const heroKv = pickSiteContent(siteContents, "hero-kv");
+const aboutPhoto = pickSiteContent(siteContents, "about-photo");
+
+// About本文はNotion側が空ならハードコードの確定値にフォールバックする
+const aboutEnText = pickSiteContent(siteContents, "about-en").text;
+const aboutJpText = pickSiteContent(siteContents, "about-jp").text;
+const aboutEnLines = aboutEnText ? aboutEnText.split("\n") : aboutProfile.en;
+const aboutJpLines = aboutJpText ? aboutJpText.split("\n") : aboutProfile.jp;
+
+// 経歴もNotion側が1件も取れなければハードコードの確定値にフォールバックする
+const notionBackgroundItems = await getBackgroundItems();
+const backgroundItems = notionBackgroundItems.length > 0 ? notionBackgroundItems : backgroundFallback;
+
+// Worksカード画像の表示幅（CSS実測ベース）。ブラウザにsrcsetから適切な1枚を選ばせるために渡す
+//   768px以上 : .sec の左右padding と .wcard-list の3列・gap 2rem、.wcard の padding 0.75rem を差し引いた値
+//   767px以下 : 1列なので画面幅から padding 24px×2 と .wcard の padding を差し引いた値
+const wcardSizes = [
+    "(max-width: 767px) calc(100vw - 72px)",
+    "(max-width: 1024px) calc((100vw - 160px) / 3 - 24px)",
+    "calc((100vw - 256px) / 3 - 24px)"
+].join(", ");
+
+// Journalギャラリー画像の表示幅（CSS実測ベース）。カード幅は .jgal-item の width: 74vw / max-width: 340px、
+// 画像幅はそこから .jgal-card の padding 0.75rem×2 を引いた値になる。
+// 340px に張り付くのは 74vw が 340px を超える 460px 以上なので、境目をそこに置いている
+const jgalSizes = [
+    "(max-width: 459px) calc(74vw - 24px)",
+    "316px"
+].join(", ");
+
+/**
+ * srcset属性の値を組み立てる
+ * @param sources 画像候補（widthは実際に出力されたpx）
+ * @returns "パス 幅w, ..." 形式の文字列。候補が1つ以下ならundefined（srcsetを出さない）
+ */
+function buildSrcset(sources: { src: string; width: number }[]): string | undefined {
+    if (sources.length < 2) return undefined;
+    return sources.map((source) => `${source.src} ${source.width}w`).join(", ");
+}
 
 // サイトの基準URL（OGP・canonicalに使用）
 const siteUrl = Astro.site?.href ?? "https://otamochi.com/";
@@ -29,18 +97,14 @@ const siteUrl = Astro.site?.href ?? "https://otamochi.com/";
 // メタディスクリプション（トップページ共通）
 const metaDescription = "奈良を拠点に、中小企業・個人向けのNotion導入・構築を支援するotamochiのポートフォリオサイト。データベース設計・自動化・テンプレート制作の実績と活動記録。";
 
-// JSに渡すデータの形成（externalUrl と slug を含める）
-const notionData = works.map(work => ({
-    id: work.id,
-    title: work.title,
-    client: work.client,
-    category: work.category,
-    overview: work.overview,
-    tools: work.tools,
-    thumbnail: work.thumbnail,
-    externalUrl: work.externalUrl,
-    slug: work.slug
-}));
+// 日付を YYYY.MM.DD 形式に整える
+const formatDate = (value) => {
+    const dateObj = new Date(value);
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const day = String(dateObj.getDate()).padStart(2, "0");
+    return `${year}.${month}.${day}`;
+};
 ---
 <!DOCTYPE html>
 <html lang="ja">
@@ -71,19 +135,19 @@ const notionData = works.map(work => ({
     <link rel="canonical" href={siteUrl}>
 
     <!-- 外部ドメインへの事前接続（表示高速化） -->
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- アニメーションライブラリ Anime.js（deferで非同期読み込み） -->
-    <script is:inline defer src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-
-    <!-- 外部JSの読み込み（deferでanime.jsの後に実行） -->
+    <!-- 外部JSの読み込み -->
     <script is:inline defer src="/js/main.js"></script>
 
-    <!-- Google Fonts 読み込み (Noto Sans JP, Quicksand, Jost) -->
+    <!-- Google Fonts（Jost / Noto Sans JP / Quicksand） -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Quicksand:wght@500;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=Quicksand:wght@500;700&display=swap"
+        rel="stylesheet">
+    <!-- Google Fonts（屋号のComfortaa / 和文本文のZen Old Mincho / 欧文本文のEB Garamond） -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Zen+Old+Mincho:wght@400&family=EB+Garamond:wght@400&display=swap"
         rel="stylesheet">
 
     <!-- 外部CSSの読み込み -->
@@ -92,175 +156,207 @@ const notionData = works.map(work => ({
 
 <body class="antialiased">
 
-    <!-- フローティングナビゲーション  -->
-    <nav class="floating-nav">
-        <!-- ロゴ設置予定地（ロゴ完成後にここへ置く） -->
-        <div class="nav-brand"></div>
-        <!-- お問い合わせボタン -->
-        <a href="https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105" target="_blank" rel="noopener noreferrer" class="nav-contact-btn link-hover-target">Contact</a>
+    <!-- イントロ（ロード画面）。屋号だけを見せてから上へ抜ける -->
+    <div class="intro" aria-hidden="true">
+        <div class="intro-word">otamochi</div>
+        <div class="intro-rule"></div>
+    </div>
+
+    <!-- 固定ナビゲーション -->
+    <nav class="site-nav">
+        <div class="site-nav-links" id="site-nav-links">
+            {navLinks.map((link) => (
+                <a href={link.href} class="site-nav-link">{link.label}</a>
+            ))}
+        </div>
+        <div class="site-nav-sep"></div>
+        <div class="site-nav-icons">
+            <a href="https://www.notion.com/ja/@otamochi" target="_blank" rel="noopener noreferrer" aria-label="Notion Templates" title="Templates" class="site-nav-icon">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.139c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632z"></path></svg>
+            </a>
+            <a href="https://x.com/Otamochi84" target="_blank" rel="noopener noreferrer" aria-label="X" title="X" class="site-nav-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
+            </a>
+        </div>
+        <div class="site-nav-sep"></div>
+        <!-- メニュー開閉ボタン（モバイルのみ表示。PCではCSSで隠す）。右端はContactに残すため、その左に置く -->
+        <button type="button" class="site-nav-toggle" aria-label="メニュー" aria-expanded="false" aria-controls="site-nav-links">
+            <span class="site-nav-toggle-bar"></span>
+            <span class="site-nav-toggle-bar"></span>
+            <span class="site-nav-toggle-bar"></span>
+        </button>
+        <a href={contactUrl} target="_blank" rel="noopener noreferrer" class="nav-contact-btn">Contact</a>
     </nav>
 
-    <!-- メインアプリケーションラッパー -->
-    <div id="app">
-
-        <!-- ヘッダー -->
-        <header class="header-section">
-            <div class="parallax-bg" data-speed="0.2">
-                ota<br>mochi
-            </div>
-
-            <div class="header-content">
-                <!-- Welcome! 全幅大見出し -->
-                <h2 class="brand-welcome">Welcome!</h2>
-
-                <!-- 名前・肩書・線（左寄せグループ） -->
-                <div class="header-profile-area">
-                    <h1 id="user-name" class="user-name">
-                        {siteConfig.name.split(' ').map((word, index, arr) => (
-                            <>
-                                <span class="reveal-text"><span>{word}</span></span>
-                                {index < arr.length - 1 && ' '}
-                            </>
-                        ))}
-                    </h1>
-                    <p id="user-bio" class="user-subtitle">
-                        {siteConfig.bio.split('\n').map((line, index) => (
-                            <>
-                                {index > 0 && <br />}
-                                {line}
-                            </>
-                        ))}
-                    </p>
-                    <div class="separator-line line-anim"></div>
-                </div>
-
-                <!-- コピーブロック（独立させて中央寄せ） -->
-                <div class="header-copy">
-                    <span class="copy-line">Designing how you work,</span>
-                    <span class="copy-line">Aligning how teams work,</span>
-                    <span class="copy-line">Building how work flows</span>
-                    <span class="copy-line-accent">— <span class="accent-highlight">with Notion.</span></span>
-                </div>
-            </div>
-        </header>
-
-        <!-- Journalセクション (活動記録) -->
-        <section id="journal" class="journal-section section-py container-padding">
-            <div class="section-header">
-                <h2 class="section-title">Journal</h2>
-            </div>
-            <div class="journal-list">
-                {journalEntries.slice(0, 5).map((entry) => {
-                    // 日付を YYYY.MM.DD 形式にフォーマット
-                    const dateObj = new Date(entry.date);
-                    const year = dateObj.getFullYear();
-                    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-                    const day = String(dateObj.getDate()).padStart(2, "0");
-                    const dateFormatted = `${year}.${month}.${day}`;
-
-                    return (
-                        <a href={`/journal/${entry.slug}/`} class="journal-row link-hover-target">
-                            <span class="journal-date">{dateFormatted}</span>
-                            <span class="journal-title">{entry.title}</span>
-                        </a>
-                    );
-                })}
-            </div>
-            <div class="view-all-link">
-                <a href="/journal/" class="link-hover-target">View all →</a>
-            </div>
-        </section>
-
-        <!-- ギャラリーセクション (Selected Works) -->
-        <section id="works" class="gallery-section section-py container-padding">
-            <div class="section-header">
-                <h2 class="section-title">Works</h2>
-            </div>
-            <div id="gallery-grid"></div>
-        </section>
-
-        <!-- テキストセクション (Free Text) -->
-        <section class="text-section section-py container-padding">
-            <div class="section-header">
-                <h2 class="section-title" id="free-text-title">{siteConfig.freeTextTitle}</h2>
-            </div>
-            <div class="text-content-wrapper">
-                <p id="free-text-body-en" class="text-body">{siteConfig.freeTextBodyEn}</p>
-                <div class="text-separator"></div>
-                <p id="free-text-body-jp" class="text-body">{siteConfig.freeTextBodyJp}</p>
-            </div>
-        </section>
-
-        <!-- コンタクトセクション (Contact) -->
-        <section class="contact-section section-py container-padding">
-            <div class="contact-inner">
-                <div class="section-header">
-                    <h2 class="section-title">Contact</h2>
-                </div>
-                <div class="contact-grid">
-                    <div>
-                        <p class="contact-subtext">Whenever you're ready.</p>
-                    </div>
-                    <div style="display: flex; flex-direction: column; justify-content: flex-end;">
-                        <ul id="links-list" class="links-list">
-                            {siteConfig.links.map((link) => (
-                                <li class="link-item">
-                                    <a href={link.url} target="_blank" rel="noopener noreferrer" class="link-anchor link-hover-target">
-                                        <span class="link-label">{link.label}</span>
-                                        <span class="link-arrow">OPEN ↗</span>
-                                    </a>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-                <div class="footer-bottom">
-                    <p id="copyright">&copy; {new Date().getFullYear()} {siteConfig.role}</p>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <!-- カード型モーダル -->
-    <div id="content-modal" onclick="closeModal(event)">
-        <div class="modal-card" onclick="event.stopPropagation()">
-            <div class="close-btn link-hover-target" onclick="closeModal(event)" role="button" tabindex="0" aria-label="閉じる">
-                <svg viewBox="0 0 60 60" fill="none">
-                    <path d="M20 20L40 40M40 20L20 40" stroke="#111" stroke-width="3" stroke-linecap="round" />
-                </svg>
-            </div>
-            <img id="modal-card-image" class="modal-card-image" src="" alt="">
-            <div class="modal-card-content">
-                <!-- クライアント名とカテゴリ -->
-                <div class="modal-card-meta">
-                    <span id="modal-card-client" class="modal-card-client"></span>
-                    <span id="modal-card-category" class="modal-card-category"></span>
-                </div>
-
-                <h3 id="modal-card-title" class="modal-card-title"></h3>
-
-                <!-- 使用ツール -->
-                <div id="modal-card-tools" class="modal-card-tools"></div>
-
-                <!-- 概要 -->
-                <p id="modal-card-desc" class="modal-card-desc"></p>
-
-                <a id="modal-card-link" href="#" target="_blank" class="modal-card-link link-hover-target"
-                    style="display: none;">
-                    プロジェクトを見る ↗
-                </a>
-                <a id="modal-card-detail" href="#" class="modal-card-link link-hover-target"
-                    style="display: none;">
-                    詳しく見る →
-                </a>
+    <!-- ヒーロー（キービジュアル1枚） -->
+    <header class="hero">
+        <div class="hero-welcome">
+            <span class="hero-welcome-text">Welcome!</span>
+            <div class="hero-welcome-rule"></div>
+        </div>
+        <div class="hero-kv-wrap">
+            <!-- 画像はNotionから取得。0枚のときはプレースホルダ（背景色）のまま表示する -->
+            <div class="hero-kv kv-tone slideshow" data-slideshow>
+                {heroKv.images.map((src, index) => (
+                    <img
+                        class:list={["slide", { "is-active": index === 0 }]}
+                        src={src}
+                        alt={index === 0 ? heroKv.imageAlt : ""}
+                        loading={index === 0 ? "eager" : "lazy"}
+                    />
+                ))}
             </div>
         </div>
-    </div>
+    </header>
 
-    <!-- 外部JSの処理にAstroから取得したNotionデータを渡す -->
-    <script is:inline define:vars={{ notionData }}>
-        window.notionDataFromAstro = notionData;
-    </script>
+    <!-- About -->
+    <section id="about" class="sec sec-white">
+        <div class="sec-head">
+            <h2 class="sec-title">About</h2>
+            <div class="sec-rule"></div>
+        </div>
+        <div class="about-grid">
+            <div class="about-col">
+                <div class="about-name-row">
+                    <p class="about-name">{aboutProfile.name}</p>
+                    <div class="about-name-rule"></div>
+                    <span class="about-wordmark" aria-hidden="true">{aboutProfile.wordmark}</span>
+                </div>
+                <p class="body-en">
+                    {aboutEnLines.map((line, index) => (
+                        <>
+                            {index > 0 && <br />}
+                            {line}
+                        </>
+                    ))}
+                </p>
+                <!-- 和文の下端を右カラムの下端に揃えるための伸縮スペーサー -->
+                <div class="about-spacer"></div>
+                <p class="body-jp">
+                    {aboutJpLines.map((line, index) => (
+                        <>
+                            {index > 0 && <br />}
+                            {line}
+                        </>
+                    ))}
+                </p>
+            </div>
+            <div class="about-col">
+                <!-- 写真を比率固定にしたぶんの高さの余りを吸収し、下の塊を右カラム下端に寄せる -->
+                <div class="about-photo-spacer"></div>
+                <!-- 画像はNotionから取得。0枚のときはプレースホルダ（背景色）のまま表示する -->
+                <div class="about-photo slideshow" data-slideshow>
+                    {aboutPhoto.images.map((src, index) => (
+                        <img
+                            class:list={["slide", { "is-active": index === 0 }]}
+                            src={src}
+                            alt={index === 0 ? aboutPhoto.imageAlt : ""}
+                            loading="lazy"
+                        />
+                    ))}
+                </div>
+                <div class="about-background">
+                    <p class="about-background-title">Background</p>
+                    <!-- 年号の左に置く菱形マークは .about-background-year の疑似要素で描く -->
+                    <div class="about-background-list">
+                        {backgroundItems.map((item) => (
+                            <div class="about-background-card">
+                                <span class="about-background-year">{item.year}</span>
+                                <div class="about-background-body">
+                                    <p class="about-background-en">{item.en}</p>
+                                    <p class="about-background-jp">{item.jp}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Journal（活動記録。画像の横スクロールギャラリー） -->
+    <section id="journal" class="sec sec-base">
+        <div class="sec-head">
+            <h2 class="sec-title">Journal</h2>
+            <div class="sec-rule"></div>
+        </div>
+        <!-- スクロール枠。カードは <a> なのでTabで辿れ、フォーカス時はブラウザが枠内へスクロールする -->
+        <div class="jgal-scroller">
+            <ul class="jgal-list">
+                {journalEntries.slice(0, 5).map((entry) => (
+                    <li class="jgal-item">
+                        <a href={`/journal/${entry.slug}/`} class="jgal-card">
+                            <!-- 画像はNotionから取得。未登録のときはプレースホルダ（背景色）のまま表示する -->
+                            <div class="jgal-image">
+                                {entry.image && (
+                                    <!-- srcのフルサイズ版はsrcset非対応環境向けのフォールバック -->
+                                    <img
+                                        src={entry.image}
+                                        srcset={buildSrcset(entry.imageSources)}
+                                        sizes={buildSrcset(entry.imageSources) ? jgalSizes : undefined}
+                                        alt={entry.title}
+                                        loading="lazy"
+                                    />
+                                )}
+                                <!-- ホバー時のオーバーレイ。ホバーできない環境ではCSSで消し、下のメタに任せる -->
+                                <div class="jgal-overlay">
+                                    <span class="jgal-overlay-date">{formatDate(entry.date)}</span>
+                                    {entry.category && (
+                                        <span class="jgal-overlay-category">Category：{entry.category}</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div class="jgal-meta">
+                                <!-- モバイルで出すのは日付だけ。カテゴリはPCのオーバーレイに任せる（PCではCSSで行ごと隠す） -->
+                                <span class="jgal-metaline">
+                                    <span class="jgal-date">{formatDate(entry.date)}</span>
+                                </span>
+                                <p class="jgal-title">{entry.title}</p>
+                            </div>
+                        </a>
+                    </li>
+                ))}
+            </ul>
+        </div>
+        <div class="jgal-viewall">
+            <a href="/journal/" class="viewall-link">View all</a>
+        </div>
+    </section>
+
+    <!-- Works（活動カテゴリ3枚。個別の実績は各カテゴリページの中に置く） -->
+    <section id="works" class="sec sec-white">
+        <div class="sec-head">
+            <h2 class="sec-title">Works</h2>
+            <div class="sec-rule"></div>
+        </div>
+        <div class="wcard-list">
+            {workCategories.map((category) => (
+                <a href={`/works/${category.slug}/`} class="wcard">
+                    <!-- 画像はNotionから取得。未登録のときはプレースホルダ（背景色）のまま表示する -->
+                    <div class="wcard-image">
+                        {category.image && (
+                            <!-- srcのフルサイズ版はsrcset非対応環境向けのフォールバック -->
+                            <img
+                                src={category.image}
+                                srcset={buildSrcset(category.imageSources)}
+                                sizes={buildSrcset(category.imageSources) ? wcardSizes : undefined}
+                                alt={category.title}
+                                loading="lazy"
+                            />
+                        )}
+                    </div>
+                    <p class="wcard-title">{category.title}</p>
+                </a>
+            ))}
+        </div>
+    </section>
+
+    <!-- Contact（コピーライトのみ） -->
+    <section id="contact" class="site-footer">
+        <p class="site-copyright">&copy; {new Date().getFullYear()} otamochi</p>
+    </section>
+
+
 </body>
 
 </html>

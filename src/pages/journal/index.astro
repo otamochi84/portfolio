@@ -72,8 +72,8 @@ const pageUrl = new URL("/journal/", Astro.site).href;
 
     <!-- フローティングナビゲーション -->
     <nav class="floating-nav">
-        <a href="/" class="nav-brand link-hover-target">← Home</a>
-        <a href="https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105" target="_blank" rel="noopener noreferrer" class="nav-contact-btn link-hover-target">Contact</a>
+        <a href="/" class="nav-brand">← Home</a>
+        <a href="https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105" target="_blank" rel="noopener noreferrer" class="nav-contact-btn">Contact</a>
     </nav>
 
     <!-- メインコンテンツ -->
@@ -98,7 +98,7 @@ const pageUrl = new URL("/journal/", Astro.site).href;
                         const dateFormatted = `${dateYear}.${month}.${day}`;
 
                         return (
-                            <a href={`/journal/${entry.slug}/`} class="journal-row link-hover-target">
+                            <a href={`/journal/${entry.slug}/`} class="journal-row">
                                 <span class="journal-date">{dateFormatted}</span>
                                 <span class="journal-title">{entry.title}</span>
                             </a>

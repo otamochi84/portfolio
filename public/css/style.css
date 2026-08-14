@@ -41,6 +41,8 @@
             overflow-x: hidden;
             width: 100%;
             overscroll-behavior-y: none;
+            /* 行末の孤立語を避ける（対応ブラウザのみ） */
+            text-wrap: pretty;
         }
 
         a {
@@ -59,13 +61,6 @@
             outline: 2px solid #b3592f;
             outline-offset: 3px;
         }
-
-        /* ギャラリーカードはホバーでもリングを表示（マウス操作時の手がかり） */
-        .gallery-item:hover {
-            outline: 2px solid #b3592f;
-            outline-offset: 3px;
-        }
-
 
         /* --- フローティングナビゲーション (NEW) --- */
         .floating-nav {
@@ -120,461 +115,1139 @@
             background-color: #f0dccf;
         }
 
-        /* --- ヘッダー --- */
-        .header-section {
-            /* 基本は画面いっぱいだが、スマホなどコンテンツが縦に伸びる場合は自動で伸ばす */
-            min-height: 100vh;
-            min-height: 100svh;
-            /* コンテンツが溢れる場合は高さを自動拡張 */
-            height: auto;
+        /* ==========================================================================
+           トップページ v2（Intro / Nav / Hero / About / Journal / Works / Service / Contact）
+           ========================================================================== */
 
+        /* 固定ナビの高さぶんアンカー位置をずらす */
+        section[id] {
+            scroll-margin-top: 92px;
+        }
+
+        /* --- イントロ（ロード画面） --- */
+        .intro {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background-color: var(--bg-body);
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
-            padding-top: 8rem;
-            padding-bottom: 4rem;
-            position: relative;
-            width: 100%;
-            overflow: hidden;
-
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
+            align-items: center;
+            justify-content: center;
+            gap: 1.75rem;
+            animation: introPanel 2.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
         }
 
-        @media (min-width: 768px) {
-            .header-section {
-                padding-top: 10rem;
-                padding-left: 3rem;
-                padding-right: 3rem;
-            }
-        }
-
-        /* 背景の巨大文字 (otamochi) */
-        .parallax-bg {
-            position: absolute;
-            right: 2%;
-            top: 10%;
-            font-weight: bold;
-            color: #e5e7eb;
-            user-select: none;
-            /* 初期状態を非表示にする（アニメーションで表示させるため） */
-            opacity: 0;
-            mix-blend-mode: multiply;
-            pointer-events: none;
-            z-index: 0;
+        .intro-word {
+            font-family: 'Comfortaa', sans-serif;
+            font-weight: 700;
+            font-size: clamp(2.2rem, 7vw, 6rem);
+            color: var(--text-main);
+            line-height: 1;
             white-space: nowrap;
-            line-height: 0.8;
-            font-size: 15vw;
-            transform: translateY(0);
-            will-change: transform;
+            animation: introWord 2.5s cubic-bezier(0.19, 1, 0.22, 1) both;
         }
 
-        @media (max-width: 768px) {
-            .parallax-bg {
-                font-size: 18vw;
-                /* スマホ時の最終透明度はJSアニメーションで制御しますが、CSSの初期値は0でOK */
-                top: 11%;
-                right: 5%;
+        .intro-rule {
+            width: min(30vw, 260px);
+            height: 1px;
+            background-color: #b3592f;
+            transform-origin: center;
+            animation: introRule 2.5s cubic-bezier(0.19, 1, 0.22, 1) both;
+        }
+
+        /* パネルは68%まで静止してから上へ抜ける */
+        @keyframes introPanel {
+            0%, 68% {
+                transform: translateY(0);
+                visibility: visible;
+            }
+
+            99.9% {
+                transform: translateY(-101%);
+                visibility: visible;
+            }
+
+            100% {
+                transform: translateY(-101%);
+                visibility: hidden;
             }
         }
 
-        .header-content {
-            position: relative;
-            z-index: 10;
-            width: 100%;
-            max-width: none;
-            margin: 0;
+        /* letter-spacingと同時にpadding-leftも動かして中心を保つ */
+        @keyframes introWord {
+            0% {
+                opacity: 0;
+                letter-spacing: 0.44em;
+                padding-left: 0.44em;
+            }
+
+            46%, 100% {
+                opacity: 1;
+                letter-spacing: 0.02em;
+                padding-left: 0.02em;
+            }
         }
 
-        /* Welcome! 大見出し */
-        .brand-welcome {
+        @keyframes introRule {
+            0%, 10% {
+                transform: scaleX(0);
+            }
+
+            58%, 100% {
+                transform: scaleX(1);
+            }
+        }
+
+        /* --- 固定ナビゲーション（トップページ用） --- */
+        .site-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 1.75rem;
+            padding: 1.5rem 3rem;
+            /* 本文と重なるため半透明＋blurは必須 */
+            background-color: rgba(248, 248, 248, 0.88);
+            backdrop-filter: blur(10px);
+        }
+
+        .site-nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .site-nav-link {
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: #6b7280;
+            transition: color 0.3s ease;
+        }
+
+        .site-nav-link:hover {
+            color: var(--text-main);
+        }
+
+        .site-nav-sep {
+            width: 1px;
+            height: 14px;
+            background-color: #e5e7eb;
+        }
+
+        .site-nav-icons {
+            display: flex;
+            align-items: center;
+            gap: 1.1rem;
+        }
+
+        .site-nav-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            transition: color 0.3s ease;
+        }
+
+        .site-nav-icon:hover {
+            color: var(--text-main);
+        }
+
+        /* メニュー開閉ボタン（モバイル専用。PCでは非表示） */
+        .site-nav-toggle {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            width: 40px;
+            height: 40px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6b7280;
+            /* 3本線（20px）は40px枠の内側に描かれるため、左右10pxぶん間隔が広く見える。
+               両側を詰めて、隣り合うアイコン・Contactとの見た目の間隔を揃える */
+            margin: 0 -0.5rem;
+        }
+
+        .site-nav-toggle-bar {
+            display: block;
+            width: 20px;
+            height: 1.5px;
+            background-color: currentColor;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        /* 展開中は3本線をバツ印に変える（中央の線を消し、上下を交差させる） */
+        .site-nav-toggle[aria-expanded="true"] .site-nav-toggle-bar:nth-child(1) {
+            transform: translateY(6.5px) rotate(45deg);
+        }
+
+        .site-nav-toggle[aria-expanded="true"] .site-nav-toggle-bar:nth-child(2) {
+            opacity: 0;
+        }
+
+        .site-nav-toggle[aria-expanded="true"] .site-nav-toggle-bar:nth-child(3) {
+            transform: translateY(-6.5px) rotate(-45deg);
+        }
+
+        /* --- ヒーロー --- */
+        .hero {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 8rem 3rem 6rem;
+        }
+
+        .hero-welcome {
+            position: absolute;
+            left: 3rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .hero-welcome-text {
             font-family: 'Quicksand', sans-serif;
             font-size: 1.25rem;
             font-weight: 700;
-            letter-spacing: -0.02em;
-            color: #111;
-            line-height: 1.1;
-            margin-bottom: 6rem;
-            /* アニメーション用 */
-            opacity: 0;
-            transform: translateY(20px);
-            margin-left: 0;
+            letter-spacing: 0.12em;
+            color: #b3592f;
+            writing-mode: vertical-rl;
         }
 
-        @media (min-width: 768px) {
-            .brand-welcome {
-                font-size: 2rem;
-                margin-bottom: 3rem;
-                margin-left: 6rem;
-            }
+        .hero-welcome-rule {
+            width: 1px;
+            height: 4.5rem;
+            background-color: #d8d3cf;
         }
 
-        @media (min-width: 1024px) {
-            .brand-welcome {
-                font-size: 2.2rem;
-            }
-        }
-
-        /* --- 名前・肩書エリア（左寄せ） --- */
-        .header-profile-area {
-            margin-left: 0;
-            margin-right: auto;
-            width: fit-content;
-            max-width: 800px;
-            display: flex;
-            flex-direction: column;
+        .hero-kv-wrap {
             position: relative;
-            align-items: flex-start;
-            text-align: left;
+            z-index: 10;
+            width: min(62vw, 880px, 86vh);
         }
 
-        @media (min-width: 768px) {
-            .header-profile-area {
-                margin-left: 6rem;
-            }
-        }
-
-        /* 名前 */
-        .user-name {
-            font-size: 2.2rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            margin-bottom: 0.5rem;
-            mix-blend-mode: darken;
-            word-break: normal;
-            line-height: 1.1;
-            text-align: left;
+        .hero-kv {
             width: 100%;
-            white-space: nowrap;
+            aspect-ratio: 16 / 9;
+            background-color: #e5e7eb;
+            overflow: hidden;
         }
 
-        @media (min-width: 768px) {
-            .user-name {
-                font-size: 4.5rem;
-            }
+        /* 写真はどれを入れてもサイトの世界観に揃うようくすませる */
+        .kv-tone {
+            position: relative;
         }
 
-        /* 肩書 */
-        .user-subtitle {
-            font-size: 0.9rem;
-            line-height: 1.8;
-            font-weight: 400;
-            color: #6b7280;
-            letter-spacing: 0.025em;
-            margin-bottom: 2rem;
-            text-align: left;
+        .kv-tone img {
             width: 100%;
-            /* アニメーション用 */
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            filter: saturate(0.78) contrast(0.94) sepia(0.1) brightness(1.02);
+        }
+
+        .kv-tone::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: #b3592f;
+            opacity: 0.07;
+            mix-blend-mode: multiply;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* --- 画像スライドショー（キービジュアル・スナップ写真で共用） --- */
+        /* 枚数でレイアウトの高さが変わらないよう、全カットを重ねてopacityだけ切り替える */
+        .slideshow {
+            position: relative;
+        }
+
+        .slideshow .slide {
+            position: absolute;
+            inset: 0;
             opacity: 0;
-            transform: translateY(20px);
+            transition: opacity 1.2s ease-in-out;
         }
 
-        @media (min-width: 768px) {
-            .user-subtitle {
-                font-size: 1.1rem;
-                white-space: nowrap;
-            }
+        .slideshow .slide.is-active {
+            opacity: 1;
         }
 
-        /* 名前下の黒い区切り線 */
-        .separator-line {
-            width: 4rem;
-            height: 2px;
-            background-color: #000;
-            margin-bottom: 2rem;
-            align-self: flex-start;
-            transform-origin: left;
-            transform: scaleX(0);
+        /* --- セクション共通 --- */
+        .sec {
+            position: relative;
+            z-index: 20;
+            padding: 8rem 96px;
         }
 
-        @media (min-width: 768px) {
-            .separator-line {
-                width: 6rem;
-            }
+        .sec-white {
+            background-color: #fff;
         }
 
-        /* --- コピーテキストブロック（中央寄せ） --- */
-        .header-copy {
+        .sec-base {
+            background-color: var(--bg-body);
+        }
+
+        .sec-head {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 4.5rem;
+        }
+
+        .sec-title {
+            font-size: 1.6rem;
+            font-weight: 500;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--text-main);
+        }
+
+        .sec-rule {
+            flex: 1;
+            height: 1px;
+            background-color: #e5e7eb;
+        }
+
+        /* --- 本文（和文・欧文） --- */
+        .body-jp {
+            font-family: 'Zen Old Mincho', serif;
+            font-size: 0.8rem;
+            line-height: 1.95;
+            letter-spacing: 0.15em;
+            color: var(--text-sub);
+            font-weight: 400;
+        }
+
+        /* 欧文に0.15emを当てると行長が伸びて手置き改行が崩れるため0.06em固定 */
+        .body-en {
+            font-family: 'EB Garamond', serif;
+            font-size: 0.8rem;
+            line-height: 1.95;
+            letter-spacing: 0.06em;
+            color: var(--text-sub);
+            font-weight: 400;
+        }
+
+        /* --- About --- */
+        .about-grid {
+            display: grid;
+            grid-template-columns: minmax(300px, 1fr) minmax(0, 1.5fr);
+            gap: 3.5rem;
+            align-items: stretch;
+            min-height: 570px;
+            width: min(78vw, 1150px);
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .about-col {
             display: flex;
             flex-direction: column;
-            /* 少し下に配置するためマージンを増やす */
-            margin-top: 5rem;
-            margin-left: auto;
-            margin-right: auto;
-            width: fit-content;
-            /* テキスト自体は左揃え */
-            align-items: flex-start;
-            text-align: left;
+            height: 100%;
         }
 
-        /* 3行コピー */
-        .copy-line {
-            font-size: 1.4rem;
-            font-weight: 400;
-            line-height: 1.6;
-            letter-spacing: 0.02em;
-            color: #333;
-            text-align: left;
+        .about-name-row {
+            display: flex;
+            align-items: baseline;
+            gap: 1.1em;
+            margin-bottom: 3rem;
+            flex-shrink: 0;
+        }
+
+        .about-name {
+            font-size: 1.5rem;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            color: var(--text-main);
             white-space: nowrap;
-            /* アニメーション用 */
-            opacity: 0;
-            transform: translateY(20px);
+            flex-shrink: 0;
         }
 
-        @media (min-width: 768px) {
-            .copy-line {
-                font-size: 2.4rem;
-            }
+        .about-name-rule {
+            flex: 1 1 0;
+            min-width: 2rem;
+            height: 1px;
+            background-color: #e5e7eb;
         }
 
-        /* コピー文の署名 (-- with Notion.) */
-        .copy-line-accent {
-            font-size: 1.6rem;
-            font-weight: 400;
-            line-height: 1.6;
-            letter-spacing: 0.03em;
-            color: #111;
-            margin-top: 1rem;
-            /* 右端に配置 */
-            align-self: flex-end;
-            text-align: right;
-            border-bottom: 2px solid #111;
-            padding-bottom: 2px;
+        .about-wordmark {
+            font-family: 'Comfortaa', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.06em;
+            color: #9ca3af;
+            user-select: none;
             white-space: nowrap;
-            /* アニメーション用 */
-            opacity: 0;
-            transform: translateY(20px);
+            flex-shrink: 0;
         }
 
-        @media (min-width: 768px) {
-            .copy-line-accent {
-                font-size: 2.7rem;
-                border-bottom-width: 2px;
-            }
+        /* 和文の下端を右カラムの下端に揃えるための伸縮スペーサー */
+        .about-spacer {
+            flex: 1;
+            min-height: 2.5rem;
         }
 
-        /* 特定単語の強調 (Notion) */
-        .accent-highlight {
-            font-weight: 800;
+        /* 写真の上に置く伸縮スペーサー。写真を比率固定にしたことで生じる高さの余りをここで吸収し、
+           写真＋Backgroundの塊を右カラムの下端に寄せる（左カラムの .about-spacer と同じ考え方） */
+        .about-photo-spacer {
+            flex: 1;
+            min-height: 0;
         }
 
-        /* 文字出現アニメーション用のラッパー */
-        .reveal-text {
+        /* 貼る写真の比率を決め打ちにするため 3:2 で固定する */
+        .about-photo {
+            flex: none;
+            aspect-ratio: 3 / 2;
+            width: 100%;
+            background-color: #e5e7eb;
             overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        /* エリアの比率に合わせて切り取って表示する（比率を固定したので余白は出ない） */
+        .about-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* 写真の右下に置く。中身の幅ぶんだけ箱を作り、左の余りを自動マージンで潰して右端に付ける。
+           行内の文字は左揃えのまま（右揃えにすると菱形→年号→本文の位置が行ごとにずれるため） */
+        .about-background {
+            flex-shrink: 0;
+            width: fit-content;
+            max-width: 100%;
+            margin-left: auto;
+        }
+
+        .about-background-title {
+            font-family: 'Comfortaa', sans-serif;
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            color: #b3592f;
+        }
+
+        /* 経歴リスト。行間と菱形マークの寸法を変数で持ち、まとめて調整できるようにする */
+        .about-background-list {
+            /* 行の間隔（時間の流れを感じさせるため本文より広めに取る） */
+            --mark-gap: 1.1rem;
+            /* 菱形の元になる正方形の一辺 */
+            --mark-size: 5px;
+            /* 45度回した菱形の見た目の幅・高さ（対角）。5px × √2 ≒ 7.1px */
+            --mark-diagonal: 7.1px;
+            /* 回転で四隅が箱からはみ出す量（片側）。約1.05px */
+            --mark-overhang: calc((var(--mark-diagonal) - var(--mark-size)) / 2);
+            /* 菱形の右端から年号までの間隔 */
+            --mark-text-gap: 0.65rem;
+
+            display: flex;
+            flex-direction: column;
+            gap: var(--mark-gap);
+            margin-top: 0.9rem;
+        }
+
+        /* 年号と本文の並び。
+           1カラム目の幅は「菱形の対角＋菱形と年号の間隔＋年号4桁ぶん（2.4rem）」で確保する。
+           年号は3行とも4桁固定なので、この固定幅で本文の左端が縦に揃う */
+        .about-background-card {
+            display: grid;
+            grid-template-columns: calc(var(--mark-diagonal) + var(--mark-text-gap) + 2.4rem) 1fr;
+            gap: 0.7rem;
+            align-items: baseline;
+        }
+
+        .about-background-year {
+            font-size: 0.62rem;
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            color: #9ca3af;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 菱形マーク。正方形を45度回して作る（SVGを持たずに済ませるため）。
+           年号と同じインラインの流れに置くことで、年号・本文とベースラインが構造的に揃う。
+           左右のmarginは回転ではみ出す角ぶん（--mark-overhang）を足し、
+           見た目の左端がカラムの左端（＝見出しの左端）にちょうど乗るようにしている */
+        .about-background-year::before {
+            content: '';
             display: inline-block;
-            vertical-align: bottom;
-            padding-right: 0.15em;
-            margin-right: -0.15em;
-            padding-bottom: 0.05em;
+            width: var(--mark-size);
+            height: var(--mark-size);
+            margin-left: var(--mark-overhang);
+            margin-right: calc(var(--mark-text-gap) + var(--mark-overhang));
+            background-color: #9ca3af;
+            /* 空のinline-blockは箱の下端がベースラインに乗るため、
+               数字の高さの中心に見えるよう1pxだけ持ち上げる */
+            transform: translateY(-1px) rotate(45deg);
         }
 
-        .reveal-text span {
-            display: block;
-            transform: translateY(100%);
+        .about-background-jp {
+            font-family: 'Zen Old Mincho', serif;
+            font-size: 0.65rem;
+            line-height: 1.5;
+            letter-spacing: 0.06em;
+            color: #6b7280;
+            font-weight: 400;
+        }
+
+        /* 色は和文（.about-background-jp）と揃える。書体と字間だけで和欧を描き分ける */
+        .about-background-en {
+            font-family: 'EB Garamond', serif;
+            font-size: 0.64rem;
+            line-height: 1.5;
+            letter-spacing: 0.03em;
+            color: #6b7280;
+            font-weight: 400;
+        }
+
+        /* --- 日付＋タイトルの一覧（Worksカテゴリページの実績一覧） --- */
+        .jrow-list {
+            max-width: 900px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .jrow {
+            display: grid;
+            grid-template-columns: 130px 1fr auto;
+            gap: 2rem;
+            align-items: center;
+            padding: 1.75rem 0;
+            /* 罫線はWorksカードの生成りに合わせた暖色グレー（寒色の#e5e7ebだと浮く） */
+            border-bottom: 1px solid #e7e3dc;
+            color: var(--text-main);
+        }
+
+        .jrow-date {
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.16em;
+            color: #6b7280;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .jrow-title {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: var(--text-main);
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .jrow:hover .jrow-title {
+            transform: translateX(10px);
+        }
+
+        /* 案件名の右に添えるカテゴリ（Notionタグ風バッジ）。
+           Journalの一覧では使わず、カテゴリページの実績一覧でのみ出る */
+        .jrow-category {
+            display: inline-block;
+            margin-left: 0.9em;
+            background-color: #f7e7de;
+            color: #b3592f;
+            font-size: 0.7rem;
+            font-weight: 500;
+            line-height: 1.6;
+            padding: 0.1em 0.65em;
+            border-radius: 4px;
+        }
+
+        .jrow-arrow {
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            color: #b3592f;
             opacity: 0;
+            transition: opacity 0.4s ease;
         }
 
-        /* スマホ用改行制御クラス */
-        .br-mobile {
+        .jrow:hover .jrow-arrow {
+            opacity: 1;
+        }
+
+        .viewall-link {
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--text-main);
+            padding-bottom: 0.35rem;
+            transition: color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .viewall-link:hover {
+            color: #b3592f;
+            border-bottom-color: #b3592f;
+        }
+
+        /* --- Journal（トップページの画像ギャラリー） --- */
+        /* 横スクロールの枠。左端はセクションの内容と揃え、右端だけ .sec の左右パディングの外へ
+           広げて画面の端でカードを見切れさせる。スクロールバーを出さずに
+           「まだ続く」ことを伝えるための見せ方。
+           広げるのはネガティブマージンぶん（＝ちょうど画面の右端まで）なので、
+           枠自体が画面からはみ出すことはなく、ページ全体は横スクロールしない。
+
+           上下のパディングはカードの影を切らせないための逃げ。
+           overflow-x を指定すると縦方向も visible ではなくなり、
+           枠からはみ出した影がクリップされてしまうため、同じ量をマージンで戻している */
+        .jgal-scroller {
+            margin: -1.25rem -96px -2rem 0;
+            padding: 1.25rem 0 2rem;
+            overflow-x: auto;
+            /* 端まで来たときにページ側（ブラウザの戻る操作）へ引き継がせない */
+            overscroll-behavior-x: contain;
+            scroll-snap-type: x mandatory;
+            /* スクロールバーは常時表示しない。見切れたカードが続きの合図を担う */
+            scrollbar-width: none;
+        }
+
+        .jgal-scroller::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 最後まで送ったときに末尾のカードが画面の端へ張り付かないよう、
+           右へはみ出させたぶんと同じ余白を末尾に足し、他のセクションの右端と揃える。
+           スクロール枠の padding-right でも最後のカードの margin-right でも余白は現れない
+           （どちらもはみ出し量に算入されないことを実測で確認済み）ため、
+           リスト自身を width: max-content にして、その箱の padding として持たせている */
+        .jgal-list {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+            width: max-content;
+            padding-right: 96px;
+        }
+
+        .jgal-item {
+            flex: 0 0 auto;
+            /* モバイルは次のカードが覗く幅にし、PCでは340pxで頭打ちにする */
+            width: 74vw;
+            max-width: 340px;
+            scroll-snap-align: start;
+        }
+
+        /* 額装の見せ方はWorksカードと同じ（生成り＋枠線なし＋にじむ影2枚重ね）。
+           影の値は .wcard からそのまま持ってきている。
+           .wcard と違い overflow は切らない。中の画像を揺らさないので必要がなく、
+           切るとフォーカスリング（outline-offset: 3px）まで削れてしまうため */
+        .jgal-card {
+            display: block;
+            padding: 0.75rem;
+            background-color: #faf8f4;
+            color: var(--text-main);
+            /* 影はホバーでも変えない。このカードの主役はオーバーレイの出現なので、
+               影まで動かすと変化が増えすぎる（Worksカードとは意図的に流儀を変えている） */
+            box-shadow:
+                0 0 18px rgba(28, 25, 23, 0.06),
+                0 4px 6px -1px rgba(28, 25, 23, 0.05);
+        }
+
+        /* 写真の比率はWorksカードと揃えて3:2で固定する。
+           画像が未登録のあいだは背景色（暖色グレー）がそのままプレースホルダになる */
+        .jgal-image {
+            position: relative;
+            aspect-ratio: 3 / 2;
+            width: 100%;
+            background-color: #ece7de;
+            overflow: hidden;
+        }
+
+        .jgal-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
             display: block;
         }
 
-        @media (min-width: 768px) {
-            .br-mobile {
+        /* ホバー時に写真へ重ねるメタ情報。日付を上、カテゴリを下に置く。
+           既定では display:none にしておき、ホバーできる環境だけで表示する */
+        .jgal-overlay {
+            display: none;
+            position: absolute;
+            inset: 0;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1.1rem;
+            /* 暗色オーバーレイ（採用案）。ただの黒幕ではなくアクセント（#b3592f）の色相へ寄せた暗色にして、
+               「このサイトの影」に見せている。文字は生成り。
+               不透明度0.68はコントラストの実測から決めた値。色相を寄せたぶん素の暗色より明るくなり、
+               0.62では真っ白な写真の上で4.22:1しか出ずAA（4.5:1）に届かない。0.68なら5.11:1で余裕がある。
+               薄くしたくなったときは、必ず白地の写真を想定して再測定すること */
+            background-color: rgba(58, 30, 18, 0.68);
+            color: #faf8f4;
+            opacity: 0;
+            transition: opacity 0.45s ease;
+        }
+
+        .jgal-overlay-date {
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.16em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 日付（Jost 500）と同じ大きさで並ぶため、太さで主役をカテゴリ側に寄せる。
+           Noto Sans JP は 400 と 500 の差が小さく、読み込んでいる中で確実に差が出るのは 700 */
+        .jgal-overlay-category {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+        }
+
+        /* 画像の下のメタ。モバイルでは日付とタイトルを常時表示し、
+           PCではタイトル以外をオーバーレイへ移す（下の @media (hover: hover) を参照）。
+           カテゴリはモバイルでは出さない（一覧が情報過多になるため、PCのオーバーレイだけで見せる） */
+        .jgal-meta {
+            margin-top: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.45rem;
+        }
+
+        /* 日付を載せる行。PCではこの行ごと隠してオーバーレイに任せるため、
+           日付そのものではなく行を単位にしてある */
+        .jgal-metaline {
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 0.5em;
+        }
+
+        /* 日付の流儀は .jrow-date と揃える（小さく・レタースペース広め・等幅数字） */
+        .jgal-date {
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.16em;
+            color: #6b7280;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* タイトルの行数は常に2行ぶんで固定し、カードの高さを揃える。
+           1行のタイトルでも2行ぶんの高さを先に確保し、3行以上になるものは2行で省略する。
+           高さは line-height から計算する（--jgal-title-lines × 行の高さ）。
+           1em はこの要素自身の font-size なので、文字サイズを変えても付いてくる */
+        .jgal-title {
+            --jgal-title-line-height: 1.6;
+            --jgal-title-lines: 2;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 400;
+            line-height: var(--jgal-title-line-height);
+            min-height: calc(1em * var(--jgal-title-line-height) * var(--jgal-title-lines));
+            /* 2行を超えたぶんは「…」で省略する。line-clamp は -webkit-box とセットでないと効かない */
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: var(--jgal-title-lines);
+            line-clamp: var(--jgal-title-lines);
+            overflow: hidden;
+            /* 省略の判定幅をカード幅に固定する。親が align-items: flex-start のため、
+               指定しないと短いタイトルの箱が文字幅まで縮み、折り返し位置が揃わない */
+            align-self: stretch;
+            color: var(--text-main);
+            transition: color 0.3s ease;
+        }
+
+        .jgal-card:hover .jgal-title {
+            color: #b3592f;
+        }
+
+        .jgal-viewall {
+            margin-top: 3rem;
+        }
+
+        /* ホバーできる環境だけ、日付を写真の上のオーバーレイへ移す（カテゴリはここでしか出さない）。
+           タッチ端末に出すと :hover が貼り付いたまま残るうえ、そもそも出す手段が無く
+           日付が完全に見えなくなるため、そちらは画像の下の常時表示のままにしている。
+           :focus-visible も条件に入れて、キーボード操作でも同じ情報が読めるようにする */
+        @media (hover: hover) {
+            .jgal-overlay {
+                display: flex;
+            }
+
+            .jgal-card:hover .jgal-overlay,
+            .jgal-card:focus-visible .jgal-overlay {
+                opacity: 1;
+            }
+
+            .jgal-meta .jgal-metaline {
                 display: none;
             }
         }
 
-        /* --- ギャラリー --- */
-        .container-padding {
-            padding-left: var(--spacing-container);
-            padding-right: var(--spacing-container);
-        }
+        /* 動きを減らす設定のユーザーには、文字色・オーバーレイの変化を付けない */
+        @media (prefers-reduced-motion: reduce) {
+            .jgal-title,
+            .jgal-overlay {
+                transition: none;
+            }
 
-        @media (min-width: 768px) {
-            .container-padding {
-                padding-left: var(--spacing-container-md);
-                padding-right: var(--spacing-container-md);
+            .jgal-scroller {
+                scroll-behavior: auto;
             }
         }
 
-        .section-py {
-            padding-top: 8rem;
-            padding-bottom: 8rem;
-        }
-
-        .gallery-section {
-            background-color: #f8f8f8;
+        /* --- Contact（コピーライトのみ） --- */
+        /* 直前のWorks（.sec-white）と同じ白にして、境目の色替わりを無くす */
+        .site-footer {
             position: relative;
             z-index: 20;
+            background-color: #fff;
+            padding: 0 96px 2.5rem;
         }
 
-        .section-header {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            margin-bottom: 6rem;
-            border-bottom: 1px solid #f3f4f6;
-            padding-bottom: 1.5rem;
-        }
-
-        .section-title {
-            font-size: 1.875rem;
-            font-weight: 700;
-            letter-spacing: -0.025em;
-        }
-
-        @media (min-width: 768px) {
-            .section-title {
-                font-size: 3rem;
-            }
-        }
-
-        .section-number {
+        /* 右端の余白は .site-footer の左右パディングが同値のため、右揃えで左端と揃う */
+        .site-copyright {
             font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
+            color: #6b7280;
             text-transform: uppercase;
-            color: #9ca3af;
-            margin-bottom: 0.25rem;
+            letter-spacing: 0.1em;
+            text-align: right;
         }
 
-        @media (min-width: 768px) {
-            .section-number {
-                font-size: 0.75rem;
+        /* --- レスポンシブ（デザイン指定はPC基準のため、以下は縮小時の指定） --- */
+        @media (max-width: 1024px) {
+            .sec {
+                padding: 6rem 48px;
+            }
+
+            .site-footer {
+                padding: 0 48px 2.5rem;
+            }
+
+            /* 右へのはみ出し量は .sec の右パディングと必ず同じにする（画面の端でぴたりと止める） */
+            .jgal-scroller {
+                margin-right: -48px;
+            }
+
+            .jgal-list {
+                padding-right: 48px;
+            }
+
+            /* 1カラムに落とすため下端揃えは不要になる。スペーサーは伸縮させない */
+            .about-grid {
+                grid-template-columns: 1fr;
+                min-height: 0;
+                width: 100%;
+                gap: 2.5rem;
+            }
+
+            .about-spacer {
+                flex: none;
+                min-height: 2rem;
+            }
+
+            .about-photo-spacer {
+                flex: none;
             }
         }
 
-        #gallery-grid {
+        @media (max-width: 767px) {
+            .sec {
+                padding: 5rem 24px;
+            }
+
+            .site-footer {
+                padding: 0 24px 2rem;
+            }
+
+            /* 右へのはみ出し量は .sec の右パディングと必ず同じにする（画面の端でぴたりと止める） */
+            .jgal-scroller {
+                margin-right: -24px;
+            }
+
+            .jgal-list {
+                padding-right: 24px;
+            }
+
+            .sec-head {
+                gap: 1.25rem;
+                margin-bottom: 2.5rem;
+            }
+
+            .sec-title {
+                font-size: 1.15rem;
+                letter-spacing: 0.22em;
+            }
+
+            /* 幅が足りないためリンクはハンバーガーメニューへ畳む。アイコンとContactは並べたまま残す */
+            .site-nav {
+                padding: 1rem 1.25rem;
+                gap: 1rem;
+            }
+
+            .site-nav-toggle {
+                display: flex;
+            }
+
+            /* リンク群はナビ直下に降りるパネルへ変える（PC時のflex行から外す） */
+            .site-nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0;
+                padding: 0 1.25rem 0.5rem;
+                background-color: rgba(248, 248, 248, 0.88);
+                backdrop-filter: blur(10px);
+                border-top: 1px solid #e5e7eb;
+            }
+
+            .site-nav-links.is-open {
+                display: flex;
+            }
+
+            /* タップ領域を確保しつつ、行の区切りは細い罫線だけに留める。
+               パネルの左右パディングは .site-nav と同じ1.25remのため、右揃えでナビ右端と揃う */
+            .site-nav-links .site-nav-link {
+                padding: 0.95rem 0;
+                border-bottom: 1px solid #e5e7eb;
+                text-align: right;
+            }
+
+            .site-nav-links .site-nav-link:last-child {
+                border-bottom: none;
+            }
+
+            .site-nav-links+.site-nav-sep {
+                display: none;
+            }
+
+            /* Welcome!はPCと同じく画像の左外に縦組みで置く。
+               左右のパディングは同値にし（PCと同じ構造）、Welcome!は左余白の中へ絶対配置で重ねる */
+            .hero {
+                padding: 7rem 4.25rem 4rem;
+            }
+
+            .hero-welcome {
+                left: 1.25rem;
+                gap: 1rem;
+            }
+
+            /* KV画像の高さが縮むため、縦組みと縦罫も同じ割合で詰める */
+            .hero-welcome-text {
+                font-size: 1rem;
+            }
+
+            .hero-welcome-rule {
+                height: 2rem;
+            }
+
+            /* 確保した左スペースの残り幅いっぱいに画像を置く */
+            .hero-kv-wrap {
+                width: min(100%, 640px);
+            }
+
+            /* 氏名・罫・ワードマークは3つとも折り返さない要素なので、
+               並べたままだと1行の最小幅が約332pxになり、狭い画面ではページごと横に溢れる
+               （320px幅で実測: html.scrollWidth 356px ＝ 36pxのはみ出し）。
+               入りきらないときだけワードマークを次の行へ落として、素直に縮むようにする。
+               収まる幅（実測で378px以上）では今までどおり1行のまま */
+            .about-name-row {
+                margin-bottom: 2rem;
+                flex-wrap: wrap;
+            }
+
+            /* 日付を上段に回して2段組にする */
+            .jrow {
+                grid-template-columns: 1fr auto;
+                gap: 0.5rem 1rem;
+                padding: 1.25rem 0;
+            }
+
+            .jrow-date {
+                grid-column: 1 / -1;
+            }
+        }
+
+        /* --- Works（活動カテゴリのカード） --- */
+        /* カードは3枚しかないため、モバイルは横スクロールではなく縦積みにする。
+           横スクロールは「まだ続く」ことを伝える仕掛けだが、3枚なら1画面に収まり、
+           写真が主役のカードは大きく見せたほうが伝わるため */
+        .wcard-list {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 1rem;
+            gap: 2.5rem;
         }
 
         @media (min-width: 768px) {
-            #gallery-grid {
-                grid-template-columns: repeat(2, 1fr);
+            .wcard-list {
+                grid-template-columns: repeat(3, 1fr);
                 gap: 2rem;
             }
         }
 
-        @media (min-width: 1024px) {
-            #gallery-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
+        /* 額装のように、余白でカード全体を囲う。枠線は引かず、
+           生成りの背景色（#faf8f4）とにじむ影だけで輪郭を出している。
+           #fff のセクション背景との色差そのものが輪郭の一部になるため、
+           影色も生成りに合わせて暖色寄りの黒（rgba(28,25,23,…)）にしている。
+           枠そのものは動かさず、中の画像だけが動く見せ方にするための土台。
 
-        .gallery-item {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 1 / 1;
+           影は性格の違う2枚を重ねる。
+             1枚目（ambient）… オフセット0・ぼかし大。全周に等しくにじみ、横の境界を作る
+             2枚目（key）    … 下方向オフセット＋負スプレッド。真下に落ちて接地感を作る
+           1枚目が無いと横の境界がほぼ消える。2枚目は下方向オフセット＋負スプレッドで
+           締めてあるぶん、構造上どうしても影が真下に寄るため。
+           実測（右辺すぐ外側の画素値。地の白は255）:
+             ambientなし … ほぼ地の白と同化し、4px先では完全に255に戻る
+             ambientあり … 6段階ほど沈み、20px先まで尾を引いて境界が出る
+           絶対値は計測条件（DPR・測る高さ）で2程度ぶれるので、差と傾きで見ること。
+
+           overflow:hidden は「揺れても画像がカードの外に出ない」ための確定仕様
+           （余白0.75remは額装のマットとしてそのまま残す） */
+        .wcard {
+            display: block;
+            padding: 0.75rem;
+            background-color: #faf8f4;
+            color: var(--text-main);
             overflow: hidden;
-            background-color: #e5e7eb;
-            opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 0.8s ease, transform 0.8s ease;
-            cursor: pointer;
+            box-shadow:
+                0 0 18px rgba(28, 25, 23, 0.06),
+                0 4px 6px -1px rgba(28, 25, 23, 0.05);
+            transition: box-shadow 0.5s ease;
         }
 
-        .gallery-item.is-visible {
-            opacity: 1;
-            transform: translateY(0);
+        /* ホバーでも2枚の関係は保ったまま、両方を一緒に強める。
+           ambientだけ据え置くとカードが浮いた瞬間に横の境界が相対的に痩せて見える */
+        .wcard:hover {
+            box-shadow:
+                0 0 28px rgba(28, 25, 23, 0.08),
+                0 20px 25px -5px rgba(28, 25, 23, 0.1);
         }
 
-        .gallery-item img {
+        /* 貼る写真の比率を決め打ちにするため 3:2 で固定する（About のスナップ写真と同じ考え方）。
+           画像が未登録のあいだは背景色がそのままプレースホルダになる。
+           寒色グレーのままだと生成りの余白から浮いて見えるので暖色側に寄せている */
+        .wcard-image {
+            aspect-ratio: 3 / 2;
+            width: 100%;
+            background-color: #ece7de;
+            overflow: hidden;
+        }
+
+        .wcard-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 1.5s cubic-bezier(0.19, 1, 0.22, 1);
-            will-change: transform;
             display: block;
         }
 
-        .gallery-item:hover img {
-            transform: scale(1.05);
+        .wcard-title {
+            margin-top: 0.9rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.16em;
+            color: var(--text-main);
+            transition: color 0.3s ease;
         }
 
-        .gallery-overlay {
-            position: absolute;
-            inset: 0;
-            background-color: #000;
-            opacity: 0;
-            transition: opacity 0.5s ease;
+        .wcard:hover .wcard-title {
+            color: #b3592f;
         }
 
-        .gallery-item:hover .gallery-overlay {
-            opacity: 0.3;
+        /* --- Worksカードの揺れ --- */
+        /* 枠とタイトルは動かさず、中の画像だけを揺らす。
+           額縁に架けた絵のように見せるため、支点は画像の上端中央に置く */
+        .wcard-image {
+            transform-origin: top center;
         }
 
-        .gallery-caption {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.5s ease;
+        /* ホバー中ずっとゆっくり揺れ続ける（最大1.3deg・2.8s・無限ループ）。
+           角度はサインカーブそのもので、式は次のとおり:
+               角度 = -1.3deg × sin(2π × t)   t は進行度（0〜1）
+           これを5%刻み（21点 ＝ 1周期あたり20分割）で近似している。
+
+           係数が負なのは「右から揺れ始める」ため。支点が上端中央なので、
+           正の回転（時計回り）だと画像の下端が左へ動く。右から始めたいので符号を反転している。
+
+           細かく刻んで animation-timing-function を linear にしているのが要点。
+           CSSのタイミング関数はキーフレームの「区間ごと」に効くため、
+           4点程度の粗いキーフレームに ease-in-out を掛けると
+           区間の境目で毎回 減速→停止→加速 が起きてカクついて見える。
+           刻みを細かくして linear で繋げば区間ごとのタメが消え、
+           加減速はサインカーブ自身の値の変化だけが担う。
+
+           0%と100%はどちらも0degで、その手前・直後の傾きも同じ（+0.402→0→-0.402）なので、
+           ループの繋ぎ目で角度も進行方向も連続する。 */
+        @keyframes wcardImageSway {
+            0% { transform: rotate(0deg); }
+            5% { transform: rotate(-0.402deg); }
+            10% { transform: rotate(-0.764deg); }
+            15% { transform: rotate(-1.052deg); }
+            20% { transform: rotate(-1.236deg); }
+            25% { transform: rotate(-1.3deg); }
+            30% { transform: rotate(-1.236deg); }
+            35% { transform: rotate(-1.052deg); }
+            40% { transform: rotate(-0.764deg); }
+            45% { transform: rotate(-0.402deg); }
+            50% { transform: rotate(0deg); }
+            55% { transform: rotate(0.402deg); }
+            60% { transform: rotate(0.764deg); }
+            65% { transform: rotate(1.052deg); }
+            70% { transform: rotate(1.236deg); }
+            75% { transform: rotate(1.3deg); }
+            80% { transform: rotate(1.236deg); }
+            85% { transform: rotate(1.052deg); }
+            90% { transform: rotate(0.764deg); }
+            95% { transform: rotate(0.402deg); }
+            100% { transform: rotate(0deg); }
         }
 
-        .gallery-item:hover .gallery-caption {
-            opacity: 1;
-        }
-
-        .view-btn {
-            color: #fff;
-            font-size: 0.75rem;
-            letter-spacing: 0.3em;
-            font-weight: 300;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            padding: 0.5rem 1rem;
-            background-color: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(2px);
-        }
-
-        /* --- フリーテキストセクション --- */
-        .text-section {
-            background-color: #fff;
-            position: relative;
-            z-index: 20;
-        }
-
-        .text-content-wrapper {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .text-body {
-            font-size: 0.95rem;
-            line-height: 2.2;
-            color: var(--text-sub);
-            white-space: pre-line;
-            font-weight: 400;
-        }
-
-        @media (min-width: 768px) {
-            .text-body {
-                font-size: 1.05rem;
+        /* タッチ端末で:hoverが貼り付かないよう、揺れはホバー可能な環境に限定する。
+           ホバー判定は枠（.wcard）で取り、動かすのは中の画像だけにする */
+        @media (hover: hover) {
+            .wcard:hover .wcard-image {
+                /* 1度以下の微小な回転は、要素が合成レイヤーに乗っていないと
+                   毎フレーム再ラスタライズされ、ピクセル単位のズレでカクついて見える。
+                   will-change: transform で合成レイヤーに載せて、この描画由来のカクつきを消す。
+                   ただし常時付けると全カードぶんのレイヤーを常に確保してメモリを食うので、
+                   揺れが発生する :hover のあいだだけに限定している */
+                will-change: transform;
+                animation: wcardImageSway 2.8s linear infinite;
             }
         }
 
-        /* テキスト間の区切り線 */
-        .text-separator {
-            width: 100%;
-            height: 1px;
-            background-color: #e5e7eb;
-            margin: 3rem 0;
-        }
+        /* 動きを減らす設定のユーザーには揺らさない。
+           揺れないなら合成レイヤーを確保する意味もないので will-change も戻す。
+           影の変化（transition）も同じく付けない。ページ末尾のグローバル指定
+           （* に transition-duration: 0.01ms !important）でも消えるが、
+           Worksカードの動きをこの1ブロックで見渡せるよう明示しておく */
+        @media (prefers-reduced-motion: reduce) {
+            .wcard {
+                transition: none;
+            }
 
-        #free-text-body-jp {
-            /* Quicksandには日本語が含まれないため、英字のみQuicksandになり、日本語はNoto Sans JPが適用されます */
-            font-family: 'Quicksand', 'Noto Sans JP', sans-serif;
-        }
-
-        /* --- Journalセクション --- */
-        .journal-section {
-            background-color: #fff;
-            position: relative;
-            z-index: 20;
+            .wcard:hover .wcard-image {
+                animation: none !important;
+                will-change: auto !important;
+            }
         }
 
         .journal-list {
@@ -637,318 +1310,6 @@
             }
         }
 
-        .view-all-link {
-            text-align: center;
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        .view-all-link a {
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: var(--text-main);
-            border-bottom: 1px solid transparent;
-            transition: border-color 0.3s ease;
-        }
-
-        .view-all-link a:hover {
-            border-bottom-color: var(--text-main);
-        }
-
-        /* --- Contact / Footer --- */
-        .contact-section {
-            background-color: #f8f8f8;
-            color: var(--text-main);
-            position: relative;
-            padding-bottom: 3rem;
-        }
-
-        /* Contactの見出しはWelcome!と同じフォントにし、罫線なし・サブテキストとの間隔を詰める */
-        .contact-section .section-title {
-            font-family: 'Quicksand', sans-serif;
-        }
-
-        .contact-section .section-header {
-            border-bottom: none;
-            padding-bottom: 0;
-            margin-bottom: 0.75rem;
-        }
-
-        .contact-inner {
-            max-width: 1280px;
-            margin: 0 auto;
-        }
-
-        .contact-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 5rem;
-        }
-
-        @media (min-width: 768px) {
-            .contact-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        .contact-label {
-            display: block;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: #6b7280;
-            margin-bottom: 2rem;
-        }
-
-        .contact-subtext {
-            font-family: 'Quicksand', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: var(--text-sub);
-            margin-top: 0;
-            margin-bottom: 4rem;
-            line-height: 1.6;
-        }
-
-        @media (min-width: 768px) {
-            .contact-subtext {
-                font-size: 1.1rem;
-                margin-top: 0;
-                margin-bottom: 5rem;
-            }
-        }
-
-        .links-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .link-item {
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 1rem;
-            position: relative;
-        }
-
-        .link-anchor {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.25rem;
-            font-weight: 300;
-            transition: all 0.3s ease;
-            width: 100%;
-        }
-
-        @media (min-width: 768px) {
-            .link-anchor {
-                font-size: 1.5rem;
-            }
-        }
-
-        .link-anchor:hover {
-            padding-left: 1rem;
-        }
-
-        .link-label {
-            transition: color 0.3s;
-        }
-
-        .link-anchor:hover .link-label {
-            color: #6b7280;
-        }
-
-        .link-arrow {
-            font-size: 0.75rem;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .link-anchor:hover .link-arrow {
-            opacity: 1;
-        }
-
-        .footer-bottom {
-            margin-top: 8rem;
-            padding-top: 2rem;
-            border-top: 1px solid #e5e7eb;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: flex-start;
-            font-size: 10px;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            gap: 1rem;
-        }
-
-        @media (min-width: 768px) {
-            .footer-bottom {
-                flex-direction: row;
-                align-items: flex-end;
-            }
-        }
-
-        /* ==========================================================================
-           Notion風 コンテンツ詳細ポップアップ (モーダル) のスタイル
-           ========================================================================== */
-        #content-modal {
-            position: fixed;
-            inset: 0;
-            z-index: 15000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(8px);
-            opacity: 0;
-            padding: 1rem;
-        }
-
-        .modal-card {
-            background-color: #fff;
-            width: 100%;
-            max-width: 700px;
-            max-height: 90vh;
-            border-radius: 16px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            position: relative;
-            transform: scale(0.95) translateY(20px);
-            opacity: 0;
-        }
-
-        .modal-card-image {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-            background-color: #f3f4f6;
-            flex-shrink: 0;
-        }
-
-        @media (min-width: 768px) {
-            .modal-card-image {
-                height: 350px;
-            }
-        }
-
-        .modal-card-content {
-            padding: 2rem;
-            overflow-y: auto;
-            flex: 1;
-        }
-
-        @media (min-width: 768px) {
-            .modal-card-content {
-                padding: 3rem;
-            }
-        }
-
-        .modal-card-meta {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 0.5rem;
-            font-size: 0.85rem;
-        }
-
-        .modal-card-client {
-            color: #6b7280;
-            font-weight: 500;
-        }
-
-        .modal-card-category {
-            background-color: #f3f4f6;
-            color: #4b5563;
-            padding: 0.2rem 0.6rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .modal-card-title {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            color: #111;
-            line-height: 1.3;
-        }
-
-        .modal-card-tools {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-card-tool-badge {
-            background-color: #e5e7eb;
-            color: #374151;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-        }
-
-        .modal-card-desc {
-            font-size: 1rem;
-            line-height: 1.8;
-            color: #4b5563;
-            white-space: pre-line;
-            margin-bottom: 2rem;
-        }
-
-        .modal-card-link {
-            display: inline-flex;
-            align-items: center;
-            background-color: #111;
-            color: #fff;
-            padding: 0.8rem 1.8rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            transition: background-color 0.3s ease;
-        }
-
-        .modal-card-link:hover {
-            background-color: #333;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            z-index: 20000;
-            cursor: pointer;
-            width: 40px;
-            height: 40px;
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, background-color 0.3s ease;
-        }
-
-        .close-btn:hover {
-            background-color: #fff;
-        }
-
-        .close-btn svg {
-            width: 20px;
-            height: 20px;
-            transition: transform 0.5s ease;
-        }
-
-        .close-btn:hover svg {
-            transform: rotate(90deg);
-        }
-
         /* 動きを減らす設定のユーザーにはアニメーション・スムーズスクロールを無効化 */
         @media (prefers-reduced-motion: reduce) {
             html {
@@ -963,3 +1324,4 @@
                 transition-duration: 0.01ms !important;
             }
         }
+
