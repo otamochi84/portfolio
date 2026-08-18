@@ -17,6 +17,20 @@
 
 `main` に直接コミットしない。必ず `work` で作業してから `main` に反映する。
 
+## Notionだけ変えたとき
+
+**Notionを更新しても、それだけではサイトに出ない。** 中身をNotionから取ってくるのはビルドの瞬間だけなので、ビルドが走らない限り何日でも古いままになる。
+
+反映させるには、Notionの親ページ「HP」にある **「サイトに公開」ボタン**を押す。数分で otamochi.com に反映される。
+
+このボタンはCloudflareのDeploy Hookを叩いており、`main` の最新コードでビルドをやり直す。**コミットは増えない**（コードは何も変わっていないため）。
+
+注意点:
+
+- **押した時点のNotion全体が公開される。** 書きかけのページがあるまま押さない
+- 押すのは編集がひととおり終わってから1回でよい。連打しない（ビルドは同時に1本まで、無料枠は月500回）
+- このボタンがあるページを外部共有しない（Deploy HookのURLには認証がないため）
+
 ## 日々の更新の流れ
 
 ### 1. 編集する
@@ -25,7 +39,7 @@
 git checkout work        # 編集用に移動（すでにいるなら不要）
 ```
 
-コードを編集する。**Notionの中身を変えただけならこの手順は要らない**（次にサイトを作り直したときに自動で反映される）。
+コードを編集する。**Notionの中身を変えただけなら、この手順ではなく上の「Notionだけ変えたとき」を見ること。**
 
 ### 2. 保存して確認する
 
@@ -65,11 +79,27 @@ git merge main           # mainの内容をworkにも取り込んで揃えてお
 公開もCloudflareも通さず、自分のMacだけで見たいとき。
 
 ```bash
-npm install     # 初回のみ
-npm run dev
+npm install                                  # 初回のみ
+./scripts/with-notion-token.sh astro dev
 ```
 
 http://localhost:4321/ が開ける。編集するとその場で反映される。
+
+## 公開されたか確認する
+
+サイトがいつ、何をきっかけに更新されたかを見る。
+
+```bash
+./scripts/deploy-log.sh
+```
+
+```
+08/17 17:00  本番    Notionのボタン  成功  main
+08/16 19:06  本番    Notionのボタン  成功  main
+08/15 04:56  本番    git push        成功  main
+```
+
+**ボタンで公開してもgitのコミットは増えない**ため、`git log` を見ても公開の履歴は追えない。Cloudflare側にしか記録が残らないので、ここで読んでいる。
 
 ---
 
@@ -96,11 +126,27 @@ Notionの親ページ「HP」の下に4つのデータベースがある。
 
 ## 設定と鍵
 
-### 秘密にするもの
+### Notionのトークン（Keychainで管理）
 
-`.env` に入れるのは `NOTION_API_KEY` だけ。**このファイルはgitに含めない。**
+`NOTION_API_KEY`（インテグレーション「HP連携」）は、ビルドのときにHP配下の4つのDBを読むための鍵。**読み取り専用**に絞ってあり、これでNotionを書き換えることはできない。それでも平文では置かず、macOS Keychain に入れてある。
 
-Cloudflare側にも同じ鍵を「シークレット」として登録してある（設定 → 変数とシークレット）。
+```bash
+# 登録（Macを乗り換えたとき、2台目をセットアップするとき）
+security add-generic-password -U -a "$USER" -s "otamochi-portfolio-notion" -w
+# → 入力欄が出るので貼り付ける。コマンド履歴には残らない
+```
+
+ビルド時は `scripts/with-notion-token.sh` が実行の直前にKeychainから取り出し、**そのプロセスにだけ**渡す。シェル全体には渡さない（渡すと、そこから起動する子プロセスすべてが読めてしまうため）。
+
+**Keychainは複数のMacで同期されない。** 2台目では上のコマンドで登録し直す。
+
+Cloudflare側にも同じ鍵を「シークレット」として登録してある（設定 → 変数とシークレット）。本番ビルドはそちらを使う。
+
+### Cloudflareのトークン（.envに平文）
+
+`CLOUDFLARE_API_TOKEN` は**読み取り専用**（Cloudflare Pages: Read）で、漏れてもデプロイ履歴が見えるだけ。サイトの改ざんも課金もできないため、`.env` に平文で置いている。`.env` は `chmod 600`（本人以外読めない）にしてある。
+
+**`.env` はgitに含めない。**
 
 ### 秘密にしないもの
 
@@ -120,9 +166,12 @@ git管理にしておくことで、複数のMacで作業してもIDの食い違
 
 | コマンド | 内容 |
 | --- | --- |
-| `npm run dev` | 手元で確認する（http://localhost:4321/） |
-| `npm run build` | サイトを組み立てて `dist/` に出力する |
+| `./scripts/with-notion-token.sh astro dev` | 手元で確認する（http://localhost:4321/） |
+| `./scripts/with-notion-token.sh astro build` | サイトを組み立てて `dist/` に出力する |
+| `./scripts/deploy-log.sh` | 公開の履歴を見る |
 | `npm run preview` | 組み立てた結果を手元で表示して確かめる |
+
+**`npm run dev` と `npm run build` は直接使わない。** Keychainからトークンを渡す必要があるため、上のラッパー経由で実行する。`package.json` を書き換えていないのは、Cloudflareの本番ビルドが `npm run build` を実行しており、そこにmacOS専用のラッパーを噛ませると落ちるため。
 
 ### 画像の扱い
 
