@@ -68,6 +68,12 @@ function renderRichText(richTexts: any[]): string {
       if (annotations.italic) {
         result = `<em>${result}</em>`;
       }
+      if (annotations.underline) {
+        result = `<u>${result}</u>`;
+      }
+      if (annotations.strikethrough) {
+        result = `<s>${result}</s>`;
+      }
       if (annotations.bold) {
         result = `<strong>${result}</strong>`;
       }
@@ -77,12 +83,31 @@ function renderRichText(richTexts: any[]): string {
         const escapedHref = escapeHtml(text.href);
         result = `<a href="${escapedHref}" target="_blank" rel="noopener">${result}</a>`;
       }
+
+      // 文字色・背景色（Notionで設定した色）を一番外側で包む。
+      // リンクより外側にすることで、CSSの .notion-color-* a { color: inherit } が効き、
+      // Notionと同じく「元の色のまま下線が付く」見た目になる
+      const textColor = annotations.color || "default";
+      if (textColor !== "default") {
+        result = `<span class="notion-color-${escapeHtml(textColor)}">${result}</span>`;
+      }
     }
 
     html += result;
   }
 
   return html;
+}
+
+/**
+ * ブロック単位で設定された色（paragraph.color 等）をクラス属性に変換する
+ *
+ * "default" のときは空文字を返すので、色が付いていないブロックのHTMLは従来どおり。
+ * callout だけは既存の .notion-callout-* を使うため、この関数は通さない。
+ */
+function blockColorAttr(color?: string): string {
+  if (!color || color === "default") return "";
+  return ` class="notion-color-${escapeHtml(color)}"`;
 }
 
 /**
@@ -130,22 +155,22 @@ function renderBlocks(blockList: any[]): string {
       const paragraphBlock = block.paragraph || {};
       const richText = paragraphBlock.rich_text || [];
       const content = renderRichText(richText);
-      html += `<p>${content}</p>`;
+      html += `<p${blockColorAttr(paragraphBlock.color)}>${content}</p>`;
     } else if (blockType === "heading_1") {
       const headingBlock = block.heading_1 || {};
       const richText = headingBlock.rich_text || [];
       const content = renderRichText(richText);
-      html += `<h2>${content}</h2>`;
+      html += `<h2${blockColorAttr(headingBlock.color)}>${content}</h2>`;
     } else if (blockType === "heading_2") {
       const headingBlock = block.heading_2 || {};
       const richText = headingBlock.rich_text || [];
       const content = renderRichText(richText);
-      html += `<h3>${content}</h3>`;
+      html += `<h3${blockColorAttr(headingBlock.color)}>${content}</h3>`;
     } else if (blockType === "heading_3") {
       const headingBlock = block.heading_3 || {};
       const richText = headingBlock.rich_text || [];
       const content = renderRichText(richText);
-      html += `<h4>${content}</h4>`;
+      html += `<h4${blockColorAttr(headingBlock.color)}>${content}</h4>`;
     } else if (blockType === "image") {
       const imageBlock = block.image || {};
       const caption = imageBlock.caption || [];
@@ -173,7 +198,7 @@ function renderBlocks(blockList: any[]): string {
       const quoteBlock = block.quote || {};
       const richText = quoteBlock.rich_text || [];
       const content = renderRichText(richText);
-      html += `<blockquote>${content}</blockquote>`;
+      html += `<blockquote${blockColorAttr(quoteBlock.color)}>${content}</blockquote>`;
     } else if (blockType === "divider") {
       html += `<hr>`;
     } else if (blockType === "callout") {
@@ -235,6 +260,28 @@ function renderBlocks(blockList: any[]): string {
       if (url) {
         html += `<p class="notion-bookmark"><a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url)} ↗</a></p>`;
       }
+    } else if (blockType === "column_list") {
+      // 段組みの入れ物。中身（column群）は getPageBlocks が children に入れている
+      const columns = block.children || [];
+      if (columns.length > 0) {
+        html += `<div class="notion-columns">${renderBlocks(columns)}</div>`;
+      }
+    } else if (blockType === "column") {
+      const columnBlock = block.column || {};
+
+      // Notion APIが width_ratio（例: 0.3333）を返すときはその比率で幅を配分する。
+      // Notion-Version 2022-06-28 では返らないことがあるため、その場合はstyle属性を出さず、
+      // CSS側の変数のフォールバック値（=1）で均等割りになるようにする。
+      // flexを直接書かずCSS変数で渡すのは、モバイルの縦積み指定をインライン指定に
+      // 負けさせない（!importantを使わずに済ませる）ため
+      const widthRatio = columnBlock.width_ratio;
+      const hasWidthRatio = typeof widthRatio === "number" && widthRatio > 0;
+      const styleAttr = hasWidthRatio
+        ? ` style="--notion-column-ratio: ${widthRatio};"`
+        : "";
+
+      const children = block.children || [];
+      html += `<div class="notion-column"${styleAttr}>${renderBlocks(children)}</div>`;
     } else {
       console.warn(`Unsupported block type: ${blockType}`);
     }
@@ -256,7 +303,7 @@ function renderBulletedList(items: any[]): string {
     const richText = listItemBlock.rich_text || [];
     const content = renderRichText(richText);
 
-    html += `<li>${content}`;
+    html += `<li${blockColorAttr(listItemBlock.color)}>${content}`;
 
     // 子ブロックがあれば処理
     if (item.children && item.children.length > 0) {
@@ -281,7 +328,7 @@ function renderNumberedList(items: any[]): string {
     const richText = listItemBlock.rich_text || [];
     const content = renderRichText(richText);
 
-    html += `<li>${content}`;
+    html += `<li${blockColorAttr(listItemBlock.color)}>${content}`;
 
     // 子ブロックがあれば処理
     if (item.children && item.children.length > 0) {

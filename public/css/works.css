@@ -6,14 +6,21 @@
 .work-header {
     max-width: 860px;
     margin: 0 auto;
-    padding: 120px 1.5rem 2.5rem 1.5rem;
+    padding: 120px 1.5rem 2rem 1.5rem;
     border-bottom: 1px solid #e0e0e0;
 }
 
 @media (min-width: 768px) {
     .work-header {
-        padding: 140px 3rem 2.5rem 3rem;
+        padding: 140px 3rem 2rem 3rem;
     }
+}
+
+/* ヘッダーの最後の子はページによって変わる（.work-title / .category-overview / .work-tools 等）ため、
+   その要素のmargin-bottomが乗ると罫線までの余白が揺れる。
+   .notion-body と同じ考え方で打ち消し、余白は .work-header の padding-bottom だけで一元管理する */
+.work-header > *:last-child {
+    margin-bottom: 0;
 }
 
 
@@ -21,14 +28,14 @@
 .work-article {
     max-width: 860px;
     margin: 0 auto;
-    padding: 2.5rem 1.5rem 4rem 1.5rem;
+    padding: 2rem 1.5rem 4rem 1.5rem;
     background-color: var(--bg-body);
     color: var(--text-main);
 }
 
 @media (min-width: 768px) {
     .work-article {
-        padding: 2.5rem 3rem 4rem 3rem;
+        padding: 2rem 3rem 4rem 3rem;
     }
 }
 
@@ -59,12 +66,6 @@
     margin-left: -0.02em;
 }
 
-@media (min-width: 768px) {
-    .work-title {
-        font-size: 3rem;
-    }
-}
-
 /* 連携ツール（テキストのみ） */
 .work-tools {
     font-size: 0.9rem;
@@ -72,12 +73,24 @@
     font-weight: 500;
 }
 
-/* Notion本文スタイル */
+/* Notion本文スタイル。
+   .notion-body 自体に border も padding も無いため、marginを持たせると
+   最初の子(p等)のmargin-topが突き抜けて相殺され、罫線まわりの余白が読めなくなる。
+   そのため .notion-body のmarginは0にし、最初/最後の子のmarginも打ち消して、
+   罫線まわりの余白は .work-article の padding だけで一元管理する */
 .notion-body {
     font-size: 1rem;
     line-height: 1.8;
     color: var(--text-main);
-    margin: 2rem 0;
+    margin: 0;
+}
+
+.notion-body > *:first-child {
+    margin-top: 0;
+}
+
+.notion-body > *:last-child {
+    margin-bottom: 0;
 }
 
 .notion-body p {
@@ -205,26 +218,41 @@
     border: 1px solid rgba(55, 53, 47, 0.16);
 }
 
-.notion-callout-gray_background { background-color: #f1f1ef; }
-.notion-callout-brown_background { background-color: #f4eeee; }
-.notion-callout-orange_background { background-color: #fbecdd; }
-.notion-callout-yellow_background { background-color: #fbf3db; }
-.notion-callout-green_background { background-color: #edf3ec; }
-.notion-callout-blue_background { background-color: #e7f3f8; }
-.notion-callout-purple_background { background-color: #f6f3f9; }
-.notion-callout-pink_background { background-color: #f9eef3; }
-.notion-callout-red_background { background-color: #fdebec; }
+/* コールアウトの背景色と、テキスト・ブロックの背景色(.notion-color-*)は同じ色コードなのでまとめる */
+.notion-callout-gray_background, .notion-color-gray_background { background-color: #f1f1ef; }
+.notion-callout-brown_background, .notion-color-brown_background { background-color: #f4eeee; }
+.notion-callout-orange_background, .notion-color-orange_background { background-color: #fbecdd; }
+.notion-callout-yellow_background, .notion-color-yellow_background { background-color: #fbf3db; }
+.notion-callout-green_background, .notion-color-green_background { background-color: #edf3ec; }
+.notion-callout-blue_background, .notion-color-blue_background { background-color: #e7f3f8; }
+.notion-callout-purple_background, .notion-color-purple_background { background-color: #f6f3f9; }
+.notion-callout-pink_background, .notion-color-pink_background { background-color: #f9eef3; }
+.notion-callout-red_background, .notion-color-red_background { background-color: #fdebec; }
 
 /* 背景なしで文字色だけ設定した場合 */
-.notion-callout-gray { color: #787774; }
-.notion-callout-brown { color: #9f6b53; }
-.notion-callout-orange { color: #d9730d; }
-.notion-callout-yellow { color: #cb912f; }
-.notion-callout-green { color: #448361; }
-.notion-callout-blue { color: #337ea9; }
-.notion-callout-purple { color: #9065b0; }
-.notion-callout-pink { color: #c14c8a; }
-.notion-callout-red { color: #d44c47; }
+.notion-callout-gray, .notion-color-gray { color: #787774; }
+.notion-callout-brown, .notion-color-brown { color: #9f6b53; }
+.notion-callout-orange, .notion-color-orange { color: #d9730d; }
+.notion-callout-yellow, .notion-color-yellow { color: #cb912f; }
+.notion-callout-green, .notion-color-green { color: #448361; }
+.notion-callout-blue, .notion-color-blue { color: #337ea9; }
+.notion-callout-purple, .notion-color-purple { color: #9065b0; }
+.notion-callout-pink, .notion-color-pink { color: #c14c8a; }
+.notion-callout-red, .notion-color-red { color: #d44c47; }
+
+/* 背景色つきの文字は、Notionと同じく文字のまわりだけを控えめに塗る */
+.notion-color-gray_background,
+.notion-color-brown_background,
+.notion-color-orange_background,
+.notion-color-yellow_background,
+.notion-color-green_background,
+.notion-color-blue_background,
+.notion-color-purple_background,
+.notion-color-pink_background,
+.notion-color-red_background {
+    padding: 0.1em 0.2em;
+    border-radius: 3px;
+}
 
 /* アイコンを本文1行分(1.8rem)のボックスにして上下中央に揃える */
 .notion-callout-icon {
@@ -258,6 +286,35 @@ img.notion-callout-icon {
     margin: 0.6rem 0 0 0;
 }
 
+/* 段組み（column_list / column）。Notionと同じく横並びにする */
+.notion-columns {
+    display: flex;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+/* width_ratio が取れたときは各カラムのstyle属性が --notion-column-ratio を渡してくる。
+   渡ってこない場合はフォールバックの 1 が効いて均等割りになる */
+.notion-column {
+    flex: var(--notion-column-ratio, 1) 1 0;
+    min-width: 0;
+}
+
+/* 段組み内は figure の上下marginが効きすぎると横並びで不格好になるため詰める。
+   .notion-body figure と同詳細度だと記述順で勝敗が決まってしまうので、
+   .notion-body を前置して詳細度を上げ、CSSの並び順に依存しないようにする */
+.notion-body .notion-column figure {
+    margin: 0 0 1rem 0;
+}
+
+.notion-column > *:first-child {
+    margin-top: 0;
+}
+
+.notion-column > *:last-child {
+    margin-bottom: 0;
+}
+
 /* ==========================================================================
    カテゴリページ（/works/[slug]）専用
    ========================================================================== */
@@ -272,7 +329,7 @@ img.notion-callout-icon {
 
 /* 実績一覧。本文（NotionBlocks）との境目を罫線で区切る */
 .category-projects {
-    margin-top: 4rem;
+    margin-top: 2rem;
     padding-top: 2rem;
     border-top: 1px solid #e0e0e0;
 }
@@ -288,7 +345,7 @@ img.notion-callout-icon {
 
 /* 外部リンク */
 .work-external-link {
-    margin: 3rem 0 2rem 0;
+    margin: 2rem 0 2rem 0;
     padding-top: 2rem;
     border-top: 1px solid #e0e0e0;
 }
@@ -374,7 +431,7 @@ img.notion-callout-icon {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
-    margin-top: 4rem;
+    margin-top: 2rem;
     padding-top: 2rem;
     border-top: 1px solid #e0e0e0;
 }
@@ -436,11 +493,11 @@ img.notion-callout-icon {
 /* スマートフォン対応 */
 @media (max-width: 767px) {
     .work-header {
-        padding: 80px 1rem 2rem 1rem;
+        padding: 80px 1rem 1.5rem 1rem;
     }
 
     .work-article {
-        padding: 2rem 1rem 2rem 1rem;
+        padding: 1.5rem 1rem 2rem 1rem;
     }
 
     .work-title {
@@ -467,8 +524,32 @@ img.notion-callout-icon {
         font-size: 1rem;
     }
 
+    .work-external-link {
+        margin-top: 1.5rem;
+        margin-bottom: 1.5rem;
+        padding-top: 1.5rem;
+    }
+
+    .category-projects {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+    }
+
     .work-nav {
         grid-template-columns: 1fr;
         gap: 1rem;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+    }
+
+    /* 段組みはモバイルではシングルカラムに落とす */
+    .notion-columns {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* 縦積みでは width_ratio 由来のflexが高さの配分になってしまうため無効化する */
+    .notion-column {
+        flex: none;
     }
 }

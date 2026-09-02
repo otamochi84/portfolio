@@ -19,30 +19,18 @@
 
 /* Archive ヘッダー */
 .journal-archive-header {
-    margin-bottom: 4rem;
+    margin-bottom: 2rem;
     border-bottom: 1px solid #e0e0e0;
-    padding-bottom: 2.5rem;
+    padding-bottom: 2rem;
 }
 
 .journal-archive-title {
     font-size: 2.2rem;
     font-weight: 800;
     line-height: 1.2;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
     color: var(--text-main);
     letter-spacing: -0.02em;
-}
-
-@media (min-width: 768px) {
-    .journal-archive-title {
-        font-size: 3rem;
-    }
-}
-
-.journal-archive-subtitle {
-    font-size: 0.95rem;
-    color: var(--text-sub);
-    font-weight: 500;
 }
 
 /* 年ごとのセクション */
@@ -72,16 +60,12 @@
     }
 
     .journal-archive-header {
-        margin-bottom: 2.5rem;
+        margin-bottom: 1.5rem;
         padding-bottom: 1.5rem;
     }
 
     .journal-archive-title {
         font-size: 1.6rem;
-    }
-
-    .journal-archive-subtitle {
-        font-size: 0.85rem;
     }
 
     .journal-year-section {
