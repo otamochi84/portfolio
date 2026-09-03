@@ -140,7 +140,17 @@ security add-generic-password -U -a "$USER" -s "otamochi-portfolio-notion" -w
 
 **Keychainは複数のMacで同期されない。** 2台目では上のコマンドで登録し直す。
 
-Cloudflare側にも同じ鍵を「シークレット」として登録してある（設定 → 変数とシークレット）。本番ビルドはそちらを使う。
+Cloudflare側にも同じ鍵を「シークレット」として登録してある（設定 → 変数とシークレット）。Cloudflareのビルドはそちらを使う。
+
+**本番（Production）とプレビュー（Preview）の両方に登録が必要。** この画面は環境ごとに別々の設定を持っているため、片方だけに入れても、もう片方のビルドは鍵が無い状態で走る。しかも**ビルドは失敗せずに成功する**（Notionの取得に失敗しても空配列を返す作りのため）ので、デプロイは緑のまま中身だけが空のサイトができあがる。記事が1件も出ないときは、まずここを疑う。
+
+登録したあとは、その環境のデプロイをやり直さないと反映されない（デプロイ → 対象のデプロイ → デプロイの再試行）。
+
+鍵の値はKeychainから画面に出さずにコピーできる:
+
+```bash
+security find-generic-password -a "$USER" -s "otamochi-portfolio-notion" -w | tr -d '\n' | pbcopy
+```
 
 ### Cloudflareのトークン（.envに平文）
 
