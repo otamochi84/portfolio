@@ -60,7 +60,6 @@ const aboutPhoto = pickSiteContent(siteContents, "about-photo");
 // About本文はNotion側が空ならハードコードの確定値にフォールバックする
 const aboutEnText = pickSiteContent(siteContents, "about-en").text;
 const aboutJpText = pickSiteContent(siteContents, "about-jp").text;
-const aboutEnLines = aboutEnText ? aboutEnText.split("\n") : aboutProfile.en;
 
 /**
  * 行の配列を空行で区切り、段落（＝意味のかたまり）ごとの行配列にまとめる
@@ -85,10 +84,12 @@ function splitIntoParagraphs(lines: string[]): string[][] {
     return paragraphs;
 }
 
-// 和文は空行で段落に分ける。Notion側が空（または空白だけ）ならフォールバックを使う。
-// aboutProfile.jp は空行を含まない行配列なので、全体で1段落として扱う
+// 和文・英文とも空行で段落に分ける。Notion側が空（または空白だけ）ならフォールバックを使う。
+// aboutProfile.jp / .en は空行を含まない行配列なので、どちらも全体で1段落として扱う
 const aboutJpNotionParagraphs = aboutJpText ? splitIntoParagraphs(aboutJpText.split("\n")) : [];
 const aboutJpParagraphs = aboutJpNotionParagraphs.length > 0 ? aboutJpNotionParagraphs : [aboutProfile.jp];
+const aboutEnNotionParagraphs = aboutEnText ? splitIntoParagraphs(aboutEnText.split("\n")) : [];
+const aboutEnParagraphs = aboutEnNotionParagraphs.length > 0 ? aboutEnNotionParagraphs : [aboutProfile.en];
 
 // 経歴もNotion側が1件も取れなければハードコードの確定値にフォールバックする
 const notionBackgroundItems = await getBackgroundItems();
@@ -252,17 +253,21 @@ const formatDate = (value) => {
                     <div class="about-name-rule"></div>
                     <span class="about-wordmark" aria-hidden="true">{aboutProfile.wordmark}</span>
                 </div>
-                <p class="body-en">
-                    {aboutEnLines.map((line, index) => (
-                        <>
-                            {index > 0 && <br />}
-                            {line}
-                        </>
+                <!-- 英文も和文と同じく意味のかたまりごとに <p>。段落間の余白は .body-jp / .body-en の p + p で調整する -->
+                <div class="body-en">
+                    {aboutEnParagraphs.map((paragraph) => (
+                        <p>
+                            {paragraph.map((line, index) => (
+                                <>
+                                    {index > 0 && <br />}
+                                    {line}
+                                </>
+                            ))}
+                        </p>
                     ))}
-                </p>
+                </div>
                 <!-- 和文の下端を右カラムの下端に揃えるための伸縮スペーサー -->
                 <div class="about-spacer"></div>
-                <!-- 和文は意味のかたまりごとに <p>。段落間の余白は .body-jp p + p で調整する -->
                 <div class="body-jp">
                     {aboutJpParagraphs.map((paragraph) => (
                         <p>
