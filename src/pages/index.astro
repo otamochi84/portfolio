@@ -262,7 +262,7 @@ const formatDate = (value) => {
                 </p>
                 <!-- 和文の下端を右カラムの下端に揃えるための伸縮スペーサー -->
                 <div class="about-spacer"></div>
-                <!-- 和文は意味のかたまりごとに <p>。段落間の余白は --about-para-gap で調整する -->
+                <!-- 和文は意味のかたまりごとに <p>。段落間の余白は .body-jp p + p で調整する -->
                 <div class="body-jp">
                     {aboutJpParagraphs.map((paragraph) => (
                         <p>
@@ -395,37 +395,6 @@ const formatDate = (value) => {
         <p class="site-copyright">&copy; {new Date().getFullYear()} otamochi</p>
     </section>
 
-    <!-- ▼▼▼ 一時的な比較用スイッチ（tmpgap）ここから ▲▲▲ の行までまるごと削除してよい ▼▼▼ -->
-    <div class="tmpgap-panel" role="group" aria-label="和文の段落間隔の比較">
-        <button type="button" class="tmpgap-btn" data-tmpgap-value="1.95em">現状</button>
-        <button type="button" class="tmpgap-btn" data-tmpgap-value="0.4em">狭い</button>
-        <button type="button" class="tmpgap-btn" data-tmpgap-value="0.7em">中</button>
-        <button type="button" class="tmpgap-btn" data-tmpgap-value="0">改行なし</button>
-    </div>
-    <script is:inline>
-        // 和文の段落間隔（--about-para-gap）を画面上のボタンで切り替える。比較用の一時コード
-        (function () {
-            var buttons = Array.prototype.slice.call(document.querySelectorAll('.tmpgap-btn'));
-            if (buttons.length === 0) return;
-
-            function applyGap(button) {
-                document.documentElement.style.setProperty('--about-para-gap', button.dataset.tmpgapValue);
-                buttons.forEach(function (item) {
-                    item.classList.toggle('is-active', item === button);
-                });
-            }
-
-            buttons.forEach(function (button) {
-                button.addEventListener('click', function () {
-                    applyGap(button);
-                });
-            });
-
-            // 初期表示は「狭い」（左から2番目）
-            applyGap(buttons[1]);
-        })();
-    </script>
-    <!-- ▲▲▲ 一時的な比較用スイッチ（tmpgap）ここまで ▲▲▲ -->
 
 </body>
 
