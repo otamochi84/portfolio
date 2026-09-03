@@ -438,6 +438,11 @@
             font-weight: 400;
         }
 
+        /* 和文の段落間。値は --about-para-gap で差し替えられるようにしてある */
+        .body-jp p + p {
+            margin-top: var(--about-para-gap, 0.5em);
+        }
+
         /* 欧文に0.15emを当てると行長が伸びて手置き改行が崩れるため0.06em固定。
            最長行は 366.9px あり、左カラムがそれを下回る画面幅（約1248px未満）では
            <br> で置いた改行が崩れる。読みやすさを優先してこのサイズを採っている */
@@ -1383,3 +1388,41 @@
             }
         }
 
+        /* ▼▼▼ 一時的な比較用スイッチ（tmpgap）ここから ▲▲▲ の行までまるごと削除してよい ▼▼▼ */
+        .tmpgap-panel {
+            position: fixed;
+            right: 12px;
+            bottom: 12px;
+            z-index: 9999;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-width: calc(100vw - 24px);
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .tmpgap-btn {
+            /* スマホでも押せるよう最低44pxのタップ領域を確保する */
+            min-width: 64px;
+            min-height: 44px;
+            padding: 0 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background-color: #fff;
+            color: #111;
+            font-family: var(--font-main);
+            font-size: 0.85rem;
+            line-height: 1.2;
+            cursor: pointer;
+        }
+
+        .tmpgap-btn.is-active {
+            border-color: #b45309;
+            background-color: #b45309;
+            color: #fff;
+        }
+        /* ▲▲▲ 一時的な比較用スイッチ（tmpgap）ここまで ▲▲▲ */
