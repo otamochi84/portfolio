@@ -562,25 +562,50 @@
 
         /* 写真の右下に置く。中身の幅ぶんだけ箱を作り、左の余りを自動マージンで潰して右端に付ける。
            行内の文字は左揃えのまま（右揃えにすると年号と本文の位置が行ごとにずれるため）。
-           --background-inset は写真の右端からどれだけ内側へ寄せるかの調整値 */
+           枠線の右端を写真の右端にぴたりと合わせるため margin-right は 0 にしている */
         .about-background {
-            --background-inset: 1.5rem;
+            /* 枠の内側の余白。上は見出しが上辺に重なるぶん 0 で、見出し自身の高さが余白になる */
+            --frame-padding: 1.4rem;
 
             flex-shrink: 0;
             width: fit-content;
             max-width: 100%;
             margin-left: auto;
-            margin-right: var(--background-inset);
+            margin-right: 0;
+            /* 主役ではないので線は1pxに留める。色は見出しと同じテラコッタ */
+            border: 1px solid #b3592f;
+            padding: 0 var(--frame-padding) var(--frame-padding);
         }
 
         /* 書体・太さ・字間はセクション見出し（.sec-title）に揃える。
-           色だけはアクセントのテラコッタを残し、見出しそのものとは階層を分ける */
+           色だけはアクセントのテラコッタを残し、見出しそのものとは階層を分ける。
+
+           枠線の上辺に重ね、文字の背後をセクションの白（.sec-white）で塗って線を切る。
+           これで枠が「見出しの分だけ開いた一筆書き」に見える。
+           line-height を 1 に固定しているのは、持ち上げ量（-50%）と詰め戻し量
+           （margin-bottom）を font-size から計算できるようにするため。
+           行の高さが 0.9rem なので、半分の 0.45rem をそのまま負のマージンで戻す。
+           display は block（幅は中身ぶん）にする。inline-block だと親の行ボックスの
+           高さに引きずられ、中心が上辺から数px下がるうえエンジンごとに量が変わる */
         .about-background-title {
+            display: block;
+            width: fit-content;
             font-size: 0.9rem;
+            line-height: 1;
             font-weight: 500;
             letter-spacing: 0.3em;
             text-transform: uppercase;
             color: #b3592f;
+            background-color: #fff;
+            /* 線の始まりを文字から離す。字間0.3emが末尾にも付くぶん、右は少なめでよい */
+            padding-right: 0.5em;
+            transform: translateY(-50%);
+            margin-bottom: -0.45rem;
+            /* 見出しの背景を枠の内側の余白の半分だけ左へ広げ、上辺の左に残る線をその分だけ短くする。
+               全部覆うと左上の角が欠けて見え、覆わないと線が長すぎるので、間を取っている。
+               テキストの位置は padding-left で戻すので動かない */
+            margin-left: calc(var(--frame-padding) / -2);
+            padding-left: calc(var(--frame-padding) / 2);
         }
 
         /* 経歴リスト。箇条書きの記号は置かない。年号が3行とも4桁で縦に揃うため、
@@ -592,7 +617,7 @@
             display: flex;
             flex-direction: column;
             gap: var(--row-gap);
-            margin-top: 0.9rem;
+            margin-top: 1.1rem;
         }
 
         /* 年号と本文の並び。1カラム目は年号4桁ぶんの固定幅で、本文の左端を縦に揃える */
