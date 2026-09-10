@@ -436,6 +436,21 @@
             letter-spacing: 0.15em;
             color: var(--text-sub);
             font-weight: 400;
+            /* 折り返しは index.astro の splitForWrap が置いた <wbr> の位置だけに限る。
+               既定の日本語の折り返しは字数だけで切るため「アトツ／ギ支援」のように語が割れる。
+               どうしても収まらない行だけ overflow-wrap が働いて任意位置で折れる */
+            word-break: keep-all;
+            overflow-wrap: anywhere;
+        }
+
+        /* bodyに掛けた text-wrap: pretty を本文だけ打ち消す。
+           Safari 26 の pretty は段落全体を見て行分割を最適化するため、行末に届く前に
+           折り返して右側に空白を作る（実測: 和文の余りが13px→79pxに増える）。
+           Chromiumは有無で結果が変わらないので、外して困る場面がない。
+           打ち消すと両エンジンの行分割が1文字違わず一致する */
+        .body-jp,
+        .body-en {
+            text-wrap: wrap;
         }
 
         /* 本文の段落間（意味のかたまりの区切り）。Notionの空行をそのまま1行ぶん(1.95em)空けると
@@ -447,9 +462,11 @@
             margin-top: 0.7em;
         }
 
-        /* 欧文に0.15emを当てると行長が伸びて手置き改行が崩れるため0.06em固定。
-           最長行は 366.9px あり、左カラムがそれを下回る画面幅（約1248px未満）では
-           <br> で置いた改行が崩れる。読みやすさを優先してこのサイズを採っている */
+        /* 欧文に0.15emを当てると行長が伸びるため0.06em固定。
+           Notion側の原稿は2026-09-11に「1段落=1文・手置き改行なし」へ改めたので、
+           そちらを表示している限り折り返しはブラウザ任せでよい。
+           ただしNotionが空のときに使う index.astro の aboutProfile.en は今も <br> で
+           改行位置を固定しており、その経路だけは画面幅によって改行が崩れる */
         .body-en {
             font-family: 'EB Garamond', serif;
             font-size: 1rem;
@@ -544,7 +561,7 @@
         }
 
         /* 写真の右下に置く。中身の幅ぶんだけ箱を作り、左の余りを自動マージンで潰して右端に付ける。
-           行内の文字は左揃えのまま（右揃えにすると菱形→年号→本文の位置が行ごとにずれるため）。
+           行内の文字は左揃えのまま（右揃えにすると年号と本文の位置が行ごとにずれるため）。
            --background-inset は写真の右端からどれだけ内側へ寄せるかの調整値 */
         .about-background {
             --background-inset: 1.5rem;
@@ -566,74 +583,58 @@
             color: #b3592f;
         }
 
-        /* 経歴リスト。行間と菱形マークの寸法を変数で持ち、まとめて調整できるようにする */
+        /* 経歴リスト。箇条書きの記号は置かない。年号が3行とも4桁で縦に揃うため、
+           それ自体が項目の始まりを示す。記号を足すと同じ役目が二重になる */
         .about-background-list {
             /* 行の間隔（時間の流れを感じさせるため本文より広めに取る） */
-            --mark-gap: 1.1rem;
-            /* 菱形の元になる正方形の一辺 */
-            --mark-size: 5px;
-            /* 45度回した菱形の見た目の幅・高さ（対角）。5px × √2 ≒ 7.1px */
-            --mark-diagonal: 7.1px;
-            /* 回転で四隅が箱からはみ出す量（片側）。約1.05px */
-            --mark-overhang: calc((var(--mark-diagonal) - var(--mark-size)) / 2);
-            /* 菱形の右端から年号までの間隔 */
-            --mark-text-gap: 0.65rem;
+            --row-gap: 1.15rem;
 
             display: flex;
             flex-direction: column;
-            gap: var(--mark-gap);
+            gap: var(--row-gap);
             margin-top: 0.9rem;
         }
 
-        /* 年号と本文の並び。
-           1カラム目の幅は「菱形の対角＋菱形と年号の間隔＋年号4桁ぶん（2.4rem）」で確保する。
-           年号は3行とも4桁固定なので、この固定幅で本文の左端が縦に揃う */
+        /* 年号と本文の並び。1カラム目は年号4桁ぶんの固定幅で、本文の左端を縦に揃える */
         .about-background-card {
             display: grid;
-            grid-template-columns: calc(var(--mark-diagonal) + var(--mark-text-gap) + 2.4rem) 1fr;
-            gap: 0.7rem;
+            grid-template-columns: 2.4rem 1fr;
+            gap: 0.9rem;
             align-items: baseline;
         }
 
+        /* 年号は時期を示すだけの補助。英文と書体・濃さを揃え、和文だけが浮き上がるようにする。
+           ここは「数値はJost」というサイトの割り当てから外して欧文本文と同じ EB Garamond を使う。
+           年号は独立した数値ではなく、下に続く英文表記と一組で読まれる並びのため。
+           サイズは EB Garamond の数字が小さく見えるぶん、英文の0.75remより一段上げて釣り合わせる。
+           色は #9ca3af まで落とすと白背景でコントラスト比 2.54:1 となりWCAG AA（4.5:1）を割るため
+           #6b7280（4.83:1）で止める */
         .about-background-year {
-            font-size: 0.7rem;
+            font-family: 'EB Garamond', serif;
+            font-size: 0.8rem;
             font-weight: 400;
             letter-spacing: 0.06em;
-            color: #9ca3af;
+            color: #6b7280;
             font-variant-numeric: tabular-nums;
         }
 
-        /* 菱形マーク。正方形を45度回して作る（SVGを持たずに済ませるため）。
-           年号と同じインラインの流れに置くことで、年号・本文とベースラインが構造的に揃う。
-           左右のmarginは回転ではみ出す角ぶん（--mark-overhang）を足し、
-           見た目の左端がカラムの左端（＝見出しの左端）にちょうど乗るようにしている */
-        .about-background-year::before {
-            content: '';
-            display: inline-block;
-            width: var(--mark-size);
-            height: var(--mark-size);
-            margin-left: var(--mark-overhang);
-            margin-right: calc(var(--mark-text-gap) + var(--mark-overhang));
-            background-color: #9ca3af;
-            /* 空のinline-blockは箱の下端がベースラインに乗るため、
-               数字の高さの中心に見えるよう1pxだけ持ち上げる */
-            transform: translateY(-1px) rotate(45deg);
-        }
-
+        /* 和文が主。3つの要素のうちここだけ濃くして、最初に目が行く先を1つに決める */
         .about-background-jp {
             font-family: 'Zen Old Mincho', serif;
-            font-size: 0.7rem;
-            line-height: 1.5;
-            letter-spacing: 0.06em;
-            color: #6b7280;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            letter-spacing: 0.08em;
+            color: #4b5563;
             font-weight: 400;
         }
 
-        /* 色は和文（.about-background-jp）と揃える。書体と字間だけで和欧を描き分ける */
+        /* 英文は和文の言い換えなので一段薄くする。ただし #9ca3af まで落とすと白背景で
+           コントラスト比 2.54:1 となりWCAG AA（4.5:1）を割るため、#6b7280（4.83:1）で止める。
+           主従は和文を #4b5563 に濃くすることで作る */
         .about-background-en {
             font-family: 'EB Garamond', serif;
-            font-size: 0.8rem;
-            line-height: 1.5;
+            font-size: 0.75rem;
+            line-height: 1.6;
             letter-spacing: 0.03em;
             color: #6b7280;
             font-weight: 400;

@@ -84,6 +84,20 @@ function splitIntoParagraphs(lines: string[]): string[][] {
     return paragraphs;
 }
 
+/**
+ * 和文を「折り返してよい位置」で分割する。助詞・句読点の直後で、かつ次が漢字かカタカナの箇所だけを
+ * 候補にする（ひらがなが続く「とともに」のような語の途中では切らないため）。
+ * ただし直後が形式名詞（後・機・際 など）のときは、「その／後」「結婚を／機に」のように
+ * ひとつづきの語が割れるので候補から外す。
+ * 分割の境目に <wbr> を置き、CSSの word-break: keep-all と組み合わせることで、
+ * 「アトツ／ギ支援」のように語の途中で改行されるのを防ぐ
+ * @param line 1行ぶんの和文
+ * @returns 折り返し可能点で区切った文字列の配列
+ */
+function splitForWrap(line: string): string[] {
+    return line.split(/(?<=[はがをにでとへもやの、。])(?![後機際上中時方頃間])(?=[\u4E00-\u9FFF\u30A0-\u30FF])/);
+}
+
 // 和文・英文とも空行で段落に分ける。Notion側が空（または空白だけ）ならフォールバックを使う。
 // aboutProfile.jp / .en は空行を含まない行配列なので、どちらも全体で1段落として扱う
 const aboutJpNotionParagraphs = aboutJpText ? splitIntoParagraphs(aboutJpText.split("\n")) : [];
@@ -253,23 +267,29 @@ const formatDate = (value) => {
                     <div class="about-name-rule"></div>
                     <span class="about-wordmark" aria-hidden="true">{aboutProfile.wordmark}</span>
                 </div>
-                <!-- 英文も和文と同じく意味のかたまりごとに <p>。段落間の余白は .body-jp / .body-en の p + p で調整する -->
-                <div class="body-en">
-                    {aboutEnParagraphs.map((paragraph) => (
+                <!-- 和文は splitForWrap が置いた <wbr> の位置だけで折り返す（CSSの word-break: keep-all と対） -->
+                <div class="body-jp">
+                    {aboutJpParagraphs.map((paragraph) => (
                         <p>
                             {paragraph.map((line, index) => (
                                 <>
                                     {index > 0 && <br />}
-                                    {line}
+                                    {splitForWrap(line).map((chunk, chunkIndex) => (
+                                        <>
+                                            {chunkIndex > 0 && <wbr />}
+                                            {chunk}
+                                        </>
+                                    ))}
                                 </>
                             ))}
                         </p>
                     ))}
                 </div>
-                <!-- 和文の下端を右カラムの下端に揃えるための伸縮スペーサー -->
+                <!-- 英文の下端を右カラムの下端に揃えるための伸縮スペーサー -->
                 <div class="about-spacer"></div>
-                <div class="body-jp">
-                    {aboutJpParagraphs.map((paragraph) => (
+                <!-- 英文も和文と同じく意味のかたまりごとに <p>。段落間の余白は .body-jp / .body-en の p + p で調整する -->
+                <div class="body-en">
+                    {aboutEnParagraphs.map((paragraph) => (
                         <p>
                             {paragraph.map((line, index) => (
                                 <>
@@ -297,14 +317,13 @@ const formatDate = (value) => {
                 </div>
                 <div class="about-background">
                     <p class="about-background-title">Background</p>
-                    <!-- 年号の左に置く菱形マークは .about-background-year の疑似要素で描く -->
                     <div class="about-background-list">
                         {backgroundItems.map((item) => (
                             <div class="about-background-card">
                                 <span class="about-background-year">{item.year}</span>
                                 <div class="about-background-body">
-                                    <p class="about-background-en">{item.en}</p>
                                     <p class="about-background-jp">{item.jp}</p>
+                                    <p class="about-background-en">{item.en}</p>
                                 </div>
                             </div>
                         ))}
