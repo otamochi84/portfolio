@@ -1,40 +1,14 @@
 ---
 import { getWorkCategories, getJournalEntries, getSiteContents, pickSiteContent, getBackgroundItems } from "../lib/notion";
 
-// プロフィール（About）。Notion側の本文が空のときに使うフォールバック
-// 改行位置はデザイン確定値のため <br> で固定する
+// プロフィール（About）の固定値。Notionから取らないのは名前と屋号だけで、本文はNotionが正。
+// 本文の予備原稿はあえて持たない。コード側に置くとNotionを直すたびに二重管理になり、
+// 実際に古いまま放置されて「取得に失敗したときだけ古い経歴が公開される」状態になっていた（2026-09-12に削除）。
+// Notionが取れなければAbout本文は出ない。そのほうが異常に気づける
 const aboutProfile = {
     name: "Ryota Ohashi",
-    wordmark: "otamochi",
-    jp: [
-        "1994年生まれ",
-        "奈良県吉野郡大淀町出身",
-        "大学では果樹の香りを研究し",
-        "化粧品メーカーで研究開発へ",
-        "その後　中小企業のアトツギ支援を経て",
-        "2024年に独立",
-        "2025年　結婚を機に奈良へUターン",
-        "現在は香芝市を拠点に活動"
-    ],
-    en: [
-        "Born in 1994",
-        "in Oyodo, Nara Prefecture.",
-        "Researched the aroma of fruit trees at university,",
-        "then joined a cosmetics manufacturer in R&D.",
-        "Later supported successors of family-run businesses,",
-        "and became independent in 2024.",
-        "Returned to Nara in 2025 after marrying,",
-        "and now works from Kashiba."
-    ]
+    wordmark: "otamochi"
 };
-
-// 学歴（Background）。Notion側が空のときに使うフォールバック
-// 英語は名詞句で統一し、学位は国際的に通じる表記にする
-const backgroundFallback = [
-    { year: "2013", jp: "奈良県立畝傍高等学校 卒業", en: "Unebi High School, Nara" },
-    { year: "2018", jp: "神戸大学農学部 卒業", en: "BSc in Agriculture, Kobe University" },
-    { year: "2020", jp: "神戸大学大学院農学研究科 修了", en: "MSc in Agriculture, Kobe University" }
-];
 
 // ナビゲーションのリンク（すべてトップ内のアンカー）
 const navLinks = [
@@ -98,16 +72,13 @@ function splitForWrap(line: string): string[] {
     return line.split(/(?<=[はがをにでとへもやの、。])(?![後機際上中時方頃間])(?=[\u4E00-\u9FFF\u30A0-\u30FF])/);
 }
 
-// 和文・英文とも空行で段落に分ける。Notion側が空（または空白だけ）ならフォールバックを使う。
-// aboutProfile.jp / .en は空行を含まない行配列なので、どちらも全体で1段落として扱う
-const aboutJpNotionParagraphs = aboutJpText ? splitIntoParagraphs(aboutJpText.split("\n")) : [];
-const aboutJpParagraphs = aboutJpNotionParagraphs.length > 0 ? aboutJpNotionParagraphs : [aboutProfile.jp];
-const aboutEnNotionParagraphs = aboutEnText ? splitIntoParagraphs(aboutEnText.split("\n")) : [];
-const aboutEnParagraphs = aboutEnNotionParagraphs.length > 0 ? aboutEnNotionParagraphs : [aboutProfile.en];
+// 和文・英文とも空行で段落に分ける。Notion側が空なら段落も0件になり、本文は描画されない
+const aboutJpParagraphs = aboutJpText ? splitIntoParagraphs(aboutJpText.split("\n")) : [];
+const aboutEnParagraphs = aboutEnText ? splitIntoParagraphs(aboutEnText.split("\n")) : [];
 
-// 経歴もNotion側が1件も取れなければハードコードの確定値にフォールバックする
-const notionBackgroundItems = await getBackgroundItems();
-const backgroundItems = notionBackgroundItems.length > 0 ? notionBackgroundItems : backgroundFallback;
+// 経歴もNotionが正。About本文と同じ理由で予備原稿は持たない（2026-09-12に削除）。
+// 0件のときは下の描画側でBackgroundの枠ごと出さない
+const backgroundItems = await getBackgroundItems();
 
 // Worksカード画像の表示幅（CSS実測ベース）。ブラウザにsrcsetから適切な1枚を選ばせるために渡す
 //   768px以上 : .sec の左右padding と .wcard-list の3列・gap 2rem、.wcard の padding 0.75rem を差し引いた値
@@ -315,20 +286,23 @@ const formatDate = (value) => {
                         />
                     ))}
                 </div>
-                <div class="about-background">
-                    <p class="about-background-title">Background</p>
-                    <div class="about-background-list">
-                        {backgroundItems.map((item) => (
-                            <div class="about-background-card">
-                                <span class="about-background-year">{item.year}</span>
-                                <div class="about-background-body">
-                                    <p class="about-background-jp">{item.jp}</p>
-                                    <p class="about-background-en">{item.en}</p>
+                <!-- Notionから1件も取れないときは、見出しと枠線だけの空箱になるのでブロックごと出さない -->
+                {backgroundItems.length > 0 && (
+                    <div class="about-background">
+                        <p class="about-background-title">Background</p>
+                        <div class="about-background-list">
+                            {backgroundItems.map((item) => (
+                                <div class="about-background-card">
+                                    <span class="about-background-year">{item.year}</span>
+                                    <div class="about-background-body">
+                                        <p class="about-background-jp">{item.jp}</p>
+                                        <p class="about-background-en">{item.en}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     </section>
