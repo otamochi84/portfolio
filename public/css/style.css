@@ -572,8 +572,11 @@
             max-width: 100%;
             margin-left: auto;
             margin-right: 0;
-            /* 主役ではないので線は1pxに留める。色は見出しと同じテラコッタ */
-            border: 1px solid #b3592f;
+            /* 主役ではないので線は1pxに留め、テラコッタを55%まで透かして白地と混ぜる。
+               不透明のままだと見出しと同じ濃さになり、枠のほうが目立ってしまう。
+               角は4pxだけ落として硬さを取る（8pxまで丸めると丸みのほうが目立つ） */
+            border: 1px solid rgba(179, 89, 47, 0.55);
+            border-radius: 4px;
             padding: 0 var(--frame-padding) var(--frame-padding);
         }
 
