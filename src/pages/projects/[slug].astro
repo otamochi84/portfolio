@@ -1,5 +1,5 @@
 ---
-import { getProjects, getPageBlocks } from "../../lib/notion";
+import { getProjects, getPageBlocks, getSiteMeta } from "../../lib/notion";
 import type { ProjectItem } from "../../lib/notion";
 import NotionBlocks from "../../components/NotionBlocks.astro";
 
@@ -42,6 +42,9 @@ const pageUrl = new URL(`/projects/${project.slug}/`, Astro.site).href;
 // サムネイル未設定時はリンク切れのog:imageを出さない（/works/[slug]と同じ扱い）
 const ogImage = project.thumbnail ? new URL(project.thumbnail, Astro.site).href : null;
 
+// タイトル・Contactのリンク・ファビコンはNotionのHP_Contentsが正
+const siteMeta = await getSiteMeta();
+
 // 実施時期フォーマット: YYYY.MM (nullなら空文字)
 let dateFormatted = "";
 if (project.date) {
@@ -62,14 +65,14 @@ if (project.date) {
     <meta name="theme-color" content="#f8f8f8">
     <meta name="description" content={metaDescription}>
 
-    <title>{project.title} | otamochi portfolio</title>
+    <title>{project.title} | {siteMeta.title}</title>
 
-    <!-- Favicon -->
-    <link rel="icon" href="/favicon.ico" sizes="32x32">
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <!-- Favicon。PNG版はNotionにアップしたSVG1枚からビルド時に生成している（2枚を別々に持たない） -->
+    {siteMeta.faviconPng && <link rel="icon" href={siteMeta.faviconPng} sizes="32x32" type="image/png">}
+    {siteMeta.faviconSvg && <link rel="icon" href={siteMeta.faviconSvg} type="image/svg+xml">}
 
     <!-- OGP タグ -->
-    <meta property="og:title" content={`${project.title} | otamochi portfolio`}>
+    <meta property="og:title" content={`${project.title} | ${siteMeta.title}`}>
     <meta property="og:description" content={metaDescription}>
     <meta property="og:type" content="article">
     {ogImage && <meta property="og:image" content={ogImage}>}
@@ -97,7 +100,9 @@ if (project.date) {
     <!-- フローティングナビゲーション -->
     <nav class="floating-nav">
         <a href="/#works" class="nav-brand">← Home</a>
-        <a href="https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105" target="_blank" rel="noopener noreferrer" class="nav-contact-btn">Contact</a>
+        {siteMeta.contactUrl && (
+            <a href={siteMeta.contactUrl} target="_blank" rel="noopener noreferrer" class="nav-contact-btn">Contact</a>
+        )}
     </nav>
 
     <!-- ヘッダー（実施時期 → 案件名 → カテゴリの順のシンプル構成） -->

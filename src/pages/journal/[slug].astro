@@ -1,5 +1,5 @@
 ---
-import { getJournalEntries, getPageBlocks } from "../../lib/notion";
+import { getJournalEntries, getPageBlocks, getSiteMeta } from "../../lib/notion";
 import type { JournalEntry } from "../../lib/notion";
 import NotionBlocks from "../../components/NotionBlocks.astro";
 
@@ -33,8 +33,12 @@ const metaDescription = (firstParagraphText || entry.title)
   .substring(0, 120)
   .replace(/\n/g, " ");
 
-// OGP・canonical用の絶対URL
+// OGP・canonical用の絶対URL。カード画像は記事のサムネイルをそのまま使う
 const pageUrl = new URL(`/journal/${entry.slug}/`, Astro.site).href;
+const ogImage = entry.image ? new URL(entry.image, Astro.site).href : null;
+
+// タイトル・Contactのリンク・ファビコンはNotionのHP_Contentsが正
+const siteMeta = await getSiteMeta();
 
 // 日付フォーマット: YYYY.MM.DD
 let dateFormatted = "";
@@ -58,16 +62,17 @@ if (entry.date) {
 
     <meta name="description" content={metaDescription}>
 
-    <title>{entry.title} | otamochi portfolio</title>
+    <title>{entry.title} | {siteMeta.title}</title>
 
-    <!-- Favicon -->
-    <link rel="icon" href="/favicon.ico" sizes="32x32">
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <!-- Favicon。PNG版はNotionにアップしたSVG1枚からビルド時に生成している（2枚を別々に持たない） -->
+    {siteMeta.faviconPng && <link rel="icon" href={siteMeta.faviconPng} sizes="32x32" type="image/png">}
+    {siteMeta.faviconSvg && <link rel="icon" href={siteMeta.faviconSvg} type="image/svg+xml">}
 
-    <!-- OGP タグ（og:imageはなし） -->
-    <meta property="og:title" content={`${entry.title} | otamochi portfolio`}>
+    <!-- OGP タグ -->
+    <meta property="og:title" content={`${entry.title} | ${siteMeta.title}`}>
     <meta property="og:description" content={metaDescription}>
     <meta property="og:type" content="article">
+    {ogImage && <meta property="og:image" content={ogImage}>}
     <meta property="og:url" content={pageUrl}>
 
     <!-- canonical -->
@@ -93,7 +98,9 @@ if (entry.date) {
     <!-- フローティングナビゲーション -->
     <nav class="floating-nav">
         <a href="/#journal" class="nav-brand">← Home</a>
-        <a href="https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105" target="_blank" rel="noopener noreferrer" class="nav-contact-btn">Contact</a>
+        {siteMeta.contactUrl && (
+            <a href={siteMeta.contactUrl} target="_blank" rel="noopener noreferrer" class="nav-contact-btn">Contact</a>
+        )}
     </nav>
 
     <!-- ヘッダー（日付＋カテゴリ → タイトルのシンプル構成） -->

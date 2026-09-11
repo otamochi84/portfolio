@@ -953,6 +953,62 @@ export function pickSiteContent(
 }
 
 /**
+ * ファビコンのSVGから32x32のPNGを作る。
+ * SVGのファビコンを読めない環境向けのフォールバック。PNGを別途Notionにアップして持つと
+ * 差し替えのたびに2枚を揃える二重管理になるため、SVG1枚から毎回作り直している
+ * （.ico はNotionのファイルアップロードAPIが受け付けないので、そもそも置けない）
+ * @param svgPath ローカル化済みのSVGのパス（/notion-images/...）
+ * @returns 生成したPNGのパス。失敗したら空文字
+ */
+async function buildFaviconPng(svgPath: string): Promise<string> {
+  const svgFileName = path.basename(svgPath);
+  const pngFileName = svgFileName.replace(/\.svg$/, "-32.png");
+
+  try {
+    const svgBuffer = await fs.readFile(path.join(publicImagesDir, svgFileName));
+    const pngBuffer = await sharp(svgBuffer).resize(32, 32).png().toBuffer();
+    return await saveImageFile(pngFileName, pngBuffer);
+  } catch (e) {
+    // 生成できなくてもSVG版だけで表示は成立するため、サイトのビルドは止めない
+    console.error("ファビコンのPNG生成に失敗:", e);
+    return "";
+  }
+}
+
+// サイト全体で使う共通の値。全ページの<head>とContactボタンが参照する
+export type SiteMeta = {
+  title: string; // <title>とog:titleのサイト名部分
+  description: string; // トップの検索結果用の説明文
+  journalDescription: string; // Journal一覧の検索結果用の説明文
+  contactUrl: string; // Contactボタンのリンク先
+  faviconSvg: string; // ファビコン(SVG)のローカルパス。未登録なら空文字
+  faviconPng: string; // 上のSVGから作った32x32のPNG。SVGを読めない環境向け
+};
+
+/**
+ * サイト共通の値をまとめて取り出す。
+ * 各ページで用途キーを直接書くと、キー名のtypeが1文字違うだけで静かに空になり、
+ * 変更のたびに全ページを直すことになるため、取り出し口をここ1つに寄せている。
+ * どの値も、Notionから取れなければ空文字を返す（呼び出し側で出し分ける）
+ * @returns サイト共通の値
+ */
+export async function getSiteMeta(): Promise<SiteMeta> {
+  const contents = await getSiteContents();
+  const favicon = pickSiteContent(contents, "favicon");
+  const faviconSvg = favicon.images.find((src) => src.endsWith(".svg")) ?? "";
+
+  return {
+    title: pickSiteContent(contents, "site-title").text,
+    description: pickSiteContent(contents, "meta-description").text,
+    journalDescription: pickSiteContent(contents, "journal-description").text,
+    contactUrl: pickSiteContent(contents, "contact-url").text,
+    // .ico はNotionのファイルアップロードAPIが対応していないため、SVGだけを見る
+    faviconSvg,
+    faviconPng: faviconSvg ? await buildFaviconPng(faviconSvg) : "",
+  };
+}
+
+/**
  * 公開状態のサイトコンテンツを取得
  * @returns 「用途」をキーにしたSiteContentの連想配列（取得失敗時は空オブジェクト）
  */
@@ -1061,14 +1117,19 @@ export async function getBackgroundItems(): Promise<BackgroundItem[]> {
         .map((t: any) => t.plain_text)
         .join("");
 
-      // 本文は「1行目=年 / 2行目=英文 / 3行目=和文」の3行構成
+      // 本文は「1行目=年」で、残りが和文と英文の2行。
+      // 和文・英文はNotion側で書く順番が入れ替わっても表示が入れ替わらないよう、
+      // 行の位置ではなく中身（日本語の文字を含むかどうか）で振り分ける
       const lines = text.split("\n").map((line: string) => line.trim());
       if (lines.length < 3) {
         console.error("Background skipped (3行未満):", page.id);
         continue;
       }
 
-      const [year, en, jp] = lines;
+      const [year, ...bodyLines] = lines;
+      const hasJapanese = (line: string) => /[ぁ-んァ-ヶ一-龥]/.test(line);
+      const jp = bodyLines.find(hasJapanese) ?? "";
+      const en = bodyLines.find((line: string) => line !== "" && !hasJapanese(line)) ?? "";
 
       // 年が数値でないものは並べ替えできないためスキップする
       if (!/^\d+$/.test(year)) {

@@ -1,5 +1,5 @@
 ---
-import { getJournalEntries } from "../../lib/notion";
+import { getJournalEntries, getSiteMeta } from "../../lib/notion";
 
 // 全件の活動記録を取得
 const journalEntries = await getJournalEntries();
@@ -23,8 +23,8 @@ const sortedYears = Object.keys(groupedEntries)
   .map(Number)
   .sort((a, b) => b - a);
 
-// メタ情報
-const metaDescription = "otamochiの活動記録。制作・学び・お知らせを時系列で掲載。";
+// メタ情報。タイトル・説明文・Contactのリンク・ファビコンはNotionのHP_Contentsが正
+const siteMeta = await getSiteMeta();
 const pageUrl = new URL("/journal/", Astro.site).href;
 ---
 
@@ -37,17 +37,17 @@ const pageUrl = new URL("/journal/", Astro.site).href;
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#f8f8f8">
 
-    <meta name="description" content={metaDescription}>
+    <meta name="description" content={siteMeta.journalDescription}>
 
-    <title>Journal | otamochi portfolio</title>
+    <title>Journal | {siteMeta.title}</title>
 
-    <!-- Favicon -->
-    <link rel="icon" href="/favicon.ico" sizes="32x32">
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <!-- Favicon。PNG版はNotionにアップしたSVG1枚からビルド時に生成している（2枚を別々に持たない） -->
+    {siteMeta.faviconPng && <link rel="icon" href={siteMeta.faviconPng} sizes="32x32" type="image/png">}
+    {siteMeta.faviconSvg && <link rel="icon" href={siteMeta.faviconSvg} type="image/svg+xml">}
 
-    <!-- OGP タグ -->
-    <meta property="og:title" content="Journal | otamochi portfolio">
-    <meta property="og:description" content={metaDescription}>
+    <!-- OGP タグ。一覧ページはSNSで共有しないため og:image は持たない -->
+    <meta property="og:title" content={`Journal | ${siteMeta.title}`}>
+    <meta property="og:description" content={siteMeta.journalDescription}>
     <meta property="og:type" content="website">
     <meta property="og:url" content={pageUrl}>
 
@@ -73,7 +73,9 @@ const pageUrl = new URL("/journal/", Astro.site).href;
     <!-- フローティングナビゲーション -->
     <nav class="floating-nav">
         <a href="/" class="nav-brand">← Home</a>
-        <a href="https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105" target="_blank" rel="noopener noreferrer" class="nav-contact-btn">Contact</a>
+        {siteMeta.contactUrl && (
+            <a href={siteMeta.contactUrl} target="_blank" rel="noopener noreferrer" class="nav-contact-btn">Contact</a>
+        )}
     </nav>
 
     <!-- メインコンテンツ -->

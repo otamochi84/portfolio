@@ -1,5 +1,5 @@
 ---
-import { getWorkCategories, getJournalEntries, getSiteContents, pickSiteContent, getBackgroundItems } from "../lib/notion";
+import { getWorkCategories, getJournalEntries, getSiteContents, pickSiteContent, getBackgroundItems, getSiteMeta } from "../lib/notion";
 
 // プロフィール（About）の固定値。Notionから取らないのは名前と屋号だけで、本文はNotionが正。
 // 本文の予備原稿はあえて持たない。コード側に置くとNotionを直すたびに二重管理になり、
@@ -17,7 +17,8 @@ const navLinks = [
     { label: "Works", href: "#works" }
 ];
 
-const contactUrl = "https://otamochi.notion.site/154df30866d3805ab4a2ca7eae98e150?pvs=105";
+// サイト共通の値（タイトル・説明文・Contactのリンク・ファビコン）はNotionのHP_Contentsが正
+const siteMeta = await getSiteMeta();
 
 // Journalの横スクロールに並べるカードの上限。これを超えたぶんは末尾のVIEW ALLから一覧ページへ送る
 const journalCardLimit = 7;
@@ -110,8 +111,8 @@ function buildSrcset(sources: { src: string; width: number }[]): string | undefi
 // サイトの基準URL（OGP・canonicalに使用）
 const siteUrl = Astro.site?.href ?? "https://otamochi.com/";
 
-// メタディスクリプション（トップページ共通）
-const metaDescription = "奈良を拠点に、中小企業・個人向けのNotion導入・構築を支援するotamochiのポートフォリオサイト。データベース設計・自動化・テンプレート制作の実績と活動記録。";
+// OGPのカード画像はキービジュアルの1枚目を使い回す（専用画像を別に作らない）
+const ogImage = heroKv.images[0] ? new URL(heroKv.images[0], siteUrl).href : null;
 
 // 日付を YYYY.MM.DD 形式に整える
 const formatDate = (value) => {
@@ -133,18 +134,19 @@ const formatDate = (value) => {
     <!-- ブラウザのアドレスバー等の色設定 -->
     <meta name="theme-color" content="#f8f8f8">
 
-    <meta name="description" content={metaDescription}>
+    <meta name="description" content={siteMeta.description}>
 
-    <title>otamochi portfolio</title>
+    <title>{siteMeta.title}</title>
 
-    <!-- Favicon -->
-    <link rel="icon" href="/favicon.ico" sizes="32x32">
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <!-- Favicon。PNG版はNotionにアップしたSVG1枚からビルド時に生成している（2枚を別々に持たない） -->
+    {siteMeta.faviconPng && <link rel="icon" href={siteMeta.faviconPng} sizes="32x32" type="image/png">}
+    {siteMeta.faviconSvg && <link rel="icon" href={siteMeta.faviconSvg} type="image/svg+xml">}
 
-    <!-- OGP タグ（og:imageは画像未制作のため未設定） -->
-    <meta property="og:title" content="otamochi portfolio">
-    <meta property="og:description" content={metaDescription}>
+    <!-- OGP タグ（SNSに貼ったときのカード） -->
+    <meta property="og:title" content={siteMeta.title}>
+    <meta property="og:description" content={siteMeta.description}>
     <meta property="og:type" content="website">
+    {ogImage && <meta property="og:image" content={ogImage}>}
     <meta property="og:url" content={siteUrl}>
 
     <!-- canonical -->
@@ -201,7 +203,9 @@ const formatDate = (value) => {
             <span class="site-nav-toggle-bar"></span>
             <span class="site-nav-toggle-bar"></span>
         </button>
-        <a href={contactUrl} target="_blank" rel="noopener noreferrer" class="nav-contact-btn">Contact</a>
+        {siteMeta.contactUrl && (
+            <a href={siteMeta.contactUrl} target="_blank" rel="noopener noreferrer" class="nav-contact-btn">Contact</a>
+        )}
     </nav>
 
     <!-- ヒーロー（キービジュアル1枚） -->
